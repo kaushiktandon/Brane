@@ -859,8 +859,8 @@ def main():
 					if(csv_id != '-1' and csv_id != database_id):
 						create_link(csv_id,database_id,False,title) #Anything in the CSV is guaranteed to not be in the database and not be a cluster
 	print("Created: " + created_CSV_file)
-	print("Less than " + str(num_articles) + " articles looked at to create " + str(id_count) + " nodes. " + str(num_invalid) + " invalid titles")
+	print(str(id_count) + " nodes, " + str(num_invalid) + " invalid titles")
 	time2 = time.time()
-	print(str((time2-myTime)/60) + " minutes")
+	print(str((time2-myTime)/60) + " minutes to run")
 if __name__ == '__main__':
 	main()
