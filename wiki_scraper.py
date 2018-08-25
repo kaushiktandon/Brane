@@ -19,12 +19,15 @@ reload(sys)
 sys.setdefaultencoding('utf8')
 sys.stdout = codecs.getwriter('utf8')(sys.stdout)
 
+#Input files
 database = 'database.csv' #Entire DB - currently is the August backup
 terms_to_collect_file = 'database_terms.csv' #Terms to gather table
-created_CSV_file = 'scrape.csv' #Created file after scraping
 avoid_terms_file = 'avoid.txt' #Terms to avoid table
-category_file = 'categories.txt'
-avoid_categories_file = 'avoid_categories.txt'
+avoid_categories_file = 'avoid_categories.txt' #categories that should not be scraped
+
+#Output files
+category_file = 'categories.txt' #Generated file of categories scraped
+created_CSV_file = 'scrape.csv' #Created file after scraping
 
 #Create a represesentation of a category in order to easily store and access important data
 class Category:
@@ -611,8 +614,6 @@ def main():
 	every_ever_category.append(Category(category_name,start_category,sub_categories,new_urls,init_layer,cat_num))
 	with open(category_file,'r+') as f:
 		for current_category in every_ever_category:
-			#if(cat_num > 420): #total = 520, 51,114
-			#	continue
 			#Don't want to go too far past AI
 			if(current_category.level >= 3):
 				continue
@@ -639,19 +640,16 @@ def main():
 						f.write(category_name + "\n")
 						print category_name, layer,cat_num
 	f.close()
-	#every_ever_category = every_ever_category:]
 	#Load list of urls
 	for current_category in every_ever_category:
 		category_urls = current_category.linked_pages
 		for url in category_urls:
 			urls.append(url)
-			#if url not in unique_urls:
-			#	unique_urls.append(url)
 	print len(every_ever_category)
 	#Start scraping a certain page
 	for i in every_ever_category:
 		print "Category:" + i.name + " has " + str(len(i.linked_pages)) + " pages "
-	#No longer needed, trying to save memory
+	#No longer needed, trying to save memory since there were some issues when running on the entire thing
 	del every_ever_category
 
 	num_articles = 0
@@ -664,22 +662,16 @@ def main():
 			continue
 		#Don't bother if is stub
 		if(isStub(soup)):
-			#if url in unique_urls:
-			#	unique_urls.remove(url)
 			print(url," is stub\n")
 			continue
 		#get title and first paragraph
 		article_title = getTitle(soup)
 		if article_title == 'Error':
-			#if url in unique_urls:
-			#	unique_urls.remove(url)
 			continue
 		paragraph = ""
 		titles_in_paragraph = list()
 		every = soup.find('div',{'class': 'mw-parser-output'})
 		if every == None:
-			#if url in unique_urls:
-			#	unique_urls.remove(url)
 			print("Error on: ",url)
 			continue
 		else:
