@@ -1,6 +1,7 @@
 import csv
 from BeautifulSoup import *
 import requests
+import json
 
 import sys
 reload(sys)
@@ -8,11 +9,12 @@ sys.setdefaultencoding('utf8')
 sys.stdout = codecs.getwriter('utf8')(sys.stdout)
 
 #input file
-august_nodes_file = 'august_backup.csv' #backup file containing ID in first column and name of node in second column
+#august_nodes_file = 'ALL NODES_ALL.csv' #backup file containing ID in first column and name of node in second column
+october_nodes_file = 'ALL NODES - 06-10-2018.json'
 #output file
 created_CSV_file = 'fixed.csv' #file that is created
 
-def loadNodes():
+def loadNodesCSV():
 	''' Loads a dictionary of nodes from the backup file
 		Returns:
 			dictionary where key is name and value is string ID
@@ -22,8 +24,24 @@ def loadNodes():
 		reader = csv.reader(f)
 		for row in reader:
 			a_id = str(row[0])
-			name = str(row[1])
-			nodes[name] = a_id
+			name = str(row[4])
+			definition = str(row[8])
+			if(definition == "" or definition == "Enter a definition"):
+				nodes[name] = a_id
+	return nodes
+def loadNodesJSON():
+	nodes = dict()
+	with open(october_nodes_file) as f:
+		data = json.load(f)
+		for i in range(len(data)):
+			a_id = str(data[i]['_key'])
+			name = str(data[i]['t'])
+			if(data[i].get('a') == None or data[i]['a'].get('description') == None):
+				definition = ""
+			else:
+				definition = str(data[i]['a']['description'])
+			if(definition == "" or definition == "Enter a definition" or definition == "Add a definition"):
+				nodes[name] = a_id
 	return nodes
 
 def getHTML(url):
@@ -110,13 +128,13 @@ def splitAndLower(words):
 		all_words[i] = all_words[i].strip()
 	return all_words
 
-august_nodes = loadNodes()
+august_nodes = loadNodesJSON()
 start_url = 'https://en.wikipedia.org/wiki/'
 count = 0.0
 with open(created_CSV_file, 'w+') as csvfile:
 	length = len(august_nodes)
 	writer = csv.writer(csvfile,lineterminator = '\n')
-
+	print length
 	for title,a_id in august_nodes.iteritems():
 		#print progress
 		count = count + 1
@@ -170,7 +188,6 @@ with open(created_CSV_file, 'w+') as csvfile:
 		if('{\displaystyle' in paragraph or 'alt=' in paragraph):
 			paragraph = ""
 		#This node needs to be updated
-		if paragraph != "":
-			print url
+		if paragraph != "" and "may refer to" not in paragraph:
 			#print("UN,"+str(a_id)+","+str(article_title)+ ",description," + paragraph.encode('utf-8') + "," + url)
 			writer.writerow(['UN',str(a_id),str(article_title),'description',paragraph,url])

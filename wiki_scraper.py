@@ -514,11 +514,12 @@ def is_cluster(id):
 	with open(database, 'r+') as f:
 		reader = csv.reader(f)
 		for row in reader:
-			database_id = row[0]
-			cl = str(row[11]).strip().lower()
-			if str(database_id) == str(id):
-				if cl == 'true':
-					return True
+			if(len(row) >= 12):
+				database_id = row[0]
+				cl = str(row[12]).strip().lower()
+				if str(database_id) == str(id):
+					if cl == 'true':
+						return True
 	return False
 def csv_match(article_title):
 	''' Determine if a Wikipedia article title matches any created node in the CSV file
