@@ -402,12 +402,12 @@ def createNodesFromPublicationsLinks(listOfPublications,projectID_dict,peopleID_
 						writer.writerow(['CL',str(person_id),str(publication.ID),'is authored by','is the author of'])
 			except:
 				print("Error in getting people in " + publication.url)
-				
+				continue
 
 			if(counter % 5 == 0):
 				print("Progress: ",counter * 100.0 / length, " %")
 			counter = counter + 1
-	print("Done creating people nodes")
+	print("Done creating publication nodes")
 	return currentID
 
 def main():
