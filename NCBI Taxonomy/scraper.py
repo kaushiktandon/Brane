@@ -88,7 +88,7 @@ def createEntityNodes(output_file,start_id):
 	'https://www.ncbi.nlm.nih.gov/Taxonomy/Browser/wwwtax.cgi?mode=Undef&name=Viroids&lvl=3&srchmode=1&keep=1&unlock','https://www.ncbi.nlm.nih.gov/Taxonomy/Browser/wwwtax.cgi?mode=Tree&id=28384&lvl=3&srchmode=1&keep=1&unlock','https://www.ncbi.nlm.nih.gov/Taxonomy/Browser/wwwtax.cgi?mode=Tree&id=12908&lvl=3&srchmode=1&keep=1&unlock']
 
 	urls = list()
-	start_time = time.time()
+	startTime = time.time()
 	for start_url in topLevels:
 		numUrls = len(urls)
 		print("Getting URLs from " + start_url)

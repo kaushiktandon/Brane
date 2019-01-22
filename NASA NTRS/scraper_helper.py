@@ -477,10 +477,10 @@ def main():
 	#		reader = csv.reader(f)
 	#		for row in reader:
 	#			writer.writerow(row)
-	pubs_file = "publications.csv"
-	authors_file = "authors.csv"
-	links_file = 'links.csv'
-	fullFile = "NASA_FULL_SCRAPE.csv"
+	pubs_file = "publications2.csv"
+	authors_file = "authors2.csv"
+	links_file = 'links2.csv'
+	fullFile = "Book3.csv"
 
 
 	with open(pubs_file, 'w+') as csvfile1:
