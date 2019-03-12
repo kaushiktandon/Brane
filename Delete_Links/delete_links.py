@@ -27,19 +27,19 @@ def deleteTable():
 def loadDatabase(links_file):
 	deleteTable()
 	with open(links_file,'r+') as f:
-		data = json.load(f)
 
 		sql = sqlite3.connect(str(database))
 		cur = sql.cursor()
 		#Create the data table
 		cur.execute('''CREATE TABLE IF NOT EXISTS data(link1 TEXT, link2 TEXT, link_id TEXT)''')
 
-		for i in range(len(data)):
-			key1 = str(data[i]['_from'])
+		for line in f:
+			data = json.loads(line)
+			key1 = str(data['data']['_from'])
 			id_1 = key1[6:]
-			key2 = str(data[i]['_to'])
+			key2 = str(data['data']['_to'])
 			id_2 = key2[6:]
-			key3 = str(data[i]['_key'])
+			key3 = str(data['data']['_key'])
 			cur.execute('''INSERT INTO data VALUES(?,?,?)''',(id_1,id_2,key3))
 		f.close()
 		sql.commit()
@@ -76,6 +76,18 @@ def getID(link1,link2):
 
 	return -1;
 
+def modifyLinksFile(links_file):
+	with open(links_file, 'r') as data_file:
+		#data = json.load(data_file)
+		for line in data_file:
+			data = json.loads(line)		
+			print data.keys()
+			break
+		#del data['author']
+
+	with open('datav2.json', 'w') as data_file:
+		data = json.dump(data, data_file)
+
 if __name__ == '__main__':
 	if(len(sys.argv) != 3):
 		print("USAGE: python delete_links.py [Input JSON Links File] [Name of output csv file]")
@@ -85,7 +97,9 @@ if __name__ == '__main__':
 		links_file = sys.argv[1]#'All links.json'
 		created_CSV_file = sys.argv[2]#'output_All deleted.csv'
 		#links = load_links()
-		loadDatabase(links_file)
+		#loadDatabase(links_file)
+		modifyLinksFile(links_file)
+
 		full_links = pd.read_json(links_file)
 		full_links['_from'].apply(str)
 		full_links['_to'].apply(str)

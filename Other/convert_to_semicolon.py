@@ -10,8 +10,8 @@ reload(sys)
 sys.setdefaultencoding('utf8')
 sys.stdout = codecs.getwriter('utf8')(sys.stdout)
 
-input_file = "../merge_nodes/merged_minus_grid.csv"
-output_file = "../merge_nodes/new_merged_converted.txt"
+input_file = "../Mitacs/new_links.csv"
+output_file = "../Mitacs/new_output_converted.txt"
 
 with open(output_file, 'w+') as csvfile1:
 	#writer1 = csv.writer(csvfile1,lineterminator = '\n',delimiter=";")

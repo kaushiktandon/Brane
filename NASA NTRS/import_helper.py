@@ -16,27 +16,48 @@ sys.stdout = codecs.getwriter('utf8')(sys.stdout)
 authors_file = 'authors1.csv'
 publications_files = ['publications1.csv']
 others_file = 'OtherNodes.csv'
-links_file = 'links1.csv'
+links_file = 'new_links.csv'
 
-nodes_json_file = "results-thebrane (4).json"
+nodes_json_file = "C:\\Users\\kaush\\Downloads\\export20190209c02\\export20190209c02\\dump\\nodes_ca15fd43dfaeb80eb8c125735e0479b0.data.json"
+links_json_file = "C:\\Users\\kaush\\Downloads\\export20190209c02\\export20190209c02\\dump\\nodes_categorizations_3a669ba138278690dc04dac6a777abe3.data.json"
 
-output_file = "new_links.csv"
-missed_file = "missing.csv"
+output_file = "new_links_a.csv"
+missed_file = "missing_a.csv"
+
+class Link:
+	def __init__(self,link1,link2):
+		self.link1 = link1
+		self.link2 = link2
 
 def load_nodes(nodes_file):
 	nodes = dict()
 	with open(nodes_file) as f:
-		data = json.load(f)
-
-		for i in range(len(data)):
+		for line in f:
+			data = json.loads(line)
 			#print data[i]
-			a_id = str(data[i][0])
-			name = str(data[i][1])
+			#a_id = str(data[i][0])
+			#name = str(data[i][1])
 
-			#a_id = str(data[i]['_key'])
-			#name = str(data[i]['t'])
+			a_id = str(data['data']['_key'])
+			name = str(data['data']['t'])
 			nodes[name] = a_id;
+	print("Loaded nodes")
 	return nodes
+def load_links(links_file):
+	links = dict()
+	with open(links_file) as f:
+		for line in f:
+
+			data = json.loads(line)
+			from_ = str(data['data']['_from'])[6:]
+			to_ = str(data['data']['_to'])[6:]
+			if(links.get(from_) == None):
+				links[from_] = [to_]
+			else:
+				links[from_].append(to_)
+			#links.append(Link(from_,to_))
+	print("Loaded links")
+	return links
 
 def load_tempID_name_pairs(fileName):
 	pairs = dict()
@@ -54,6 +75,15 @@ def merge_two_dicts(x, y):
     z = x.copy()   # start with x's keys and values
     z.update(y)    # modifies z with y's keys and values & returns None
     return z
+def linkExists(id1,id2, links):
+	if(links.get(id1) == None):
+		print(id1)
+		return False
+	for id in links.get(id1):
+		if id == id2:
+			return True
+			print id1, id2
+	return False
 
 def main():
 	authors_nodes = load_tempID_name_pairs(authors_file)
@@ -65,19 +95,27 @@ def main():
 	other_nodes = load_tempID_name_pairs(others_file)
 
 	database_nodes = load_nodes(nodes_json_file)
+	links = load_links(links_json_file,authors_nodes,publications_nodes,other_nodes,database_nodes)
 	counter = 0
 	rowsWritten = 0
+	z = 0
 	with open(output_file, 'w+') as csvfile1:
 		writer1 = csv.writer(csvfile1,lineterminator = '\n')
 		with open(missed_file, 'w+') as csvfile2:
 			writer2 = csv.writer(csvfile2,lineterminator='\n')
 			with open(links_file,'r+') as f:
 				reader = csv.reader(f)
+				length = 786116#sum(1 for row in reader)
 				for row in reader:
+					z = z + 1
+					if(z % 3000 == 0):
+						print(z * 100.0/ length)
 					if(len(row)) < 5:
 						continue
 					id_1 = str(row[1])
 					id_2 = str(row[2])
+					if(linkExists(id_1,id_2, links)):
+						continue
 					if(int(id_1) > 8000000):
 						new_id1 = str(id_1)
 					elif(authors_nodes.get(str(id_1)) != None):

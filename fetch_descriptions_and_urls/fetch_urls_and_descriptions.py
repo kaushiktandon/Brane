@@ -25,17 +25,22 @@ def loadNodesCSV(nodes_file):
 	return nodes
 def loadNodesJSON(nodes_file):
 	nodes = dict()
+	print ("Loading nodes")
 	with open(nodes_file) as f:
-		data = json.load(f)
-		for i in range(len(data)):
-			a_id = str(data[i]['_key'])
-			name = str(data[i]['t'])
-			if(data[i].get('a') == None or data[i]['a'].get('description') == None):
+		for line in f:
+
+			data = json.loads(line)
+			a_id = str(data['data']['_key'])
+			name = str(data['data']['t'])
+			if('(' in name and ')' in name):
+				name = name[:name.find('(')].strip()
+			if(data['data'].get('a') == None or data['data']['a'].get('description') == None):
 				definition = ""
 			else:
-				definition = str(data[i]['a']['description'])
+				definition = str(data['data']['a']['description'])
 			if(definition == "" or definition == "Enter a definition" or definition == "Add a definition"):
 				nodes[name] = a_id
+	print ("Loaded nodes")
 	return nodes
 
 def getHTML(url):
@@ -139,10 +144,12 @@ if __name__ == '__main__':
 			writer = csv.writer(csvfile,lineterminator = '\n')
 			print length
 			for title,a_id in nodes.iteritems():
-				#print progress
 				count = count + 1
+				if(count < 29225 or count > 129225):
+					continue
+				#print progress
 				if (count % 25 == 0):
-					print (count * 100 / length, '%')
+					print (count, count * 100 / length, '%')
 				#change ? to -
 				if('?' in title):
 					title = title.replace("?","-")
@@ -193,4 +200,4 @@ if __name__ == '__main__':
 				#This node needs to be updated
 				if paragraph != "" and "may refer to" not in paragraph:
 					#print("UN,"+str(a_id)+","+str(article_title)+ ",description," + paragraph.encode('utf-8') + "," + url)
-					writer.writerow(['UN',str(a_id),str(article_title),'description',paragraph,url])
+					writer.writerow(['UN',str(a_id),str(article_title),'description',paragraph,'reference',url])
