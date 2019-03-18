@@ -98,9 +98,8 @@ if __name__ == '__main__':
 		created_CSV_file = sys.argv[2]#'output_All deleted.csv'
 		#links = load_links()
 		#loadDatabase(links_file)
-		modifyLinksFile(links_file)
-
-		full_links = pd.read_json(links_file)
+		
+		full_links = pd.read_json(links_file,lines=True)
 		full_links['_from'].apply(str)
 		full_links['_to'].apply(str)
 		full_links['_from'] = (full_links['_from'].str.extract('(\d+)'))
