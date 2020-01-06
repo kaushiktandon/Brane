@@ -72,6 +72,10 @@ def main():
 			if (author.find(',') == -1):
 				# Skip if no comma
 				continue
+			topic_key = 'T' + str(topic_key_val)
+			# Increment key value for next topic
+			topic_key_val = topic_key_val + 1
+
 			first_name, last_name = parse_author(author)
 			initials = first_name[0] + "." + last_name[0] + "."
 			terms = [form_author_name(first_name, last_name), last_name, initials]
@@ -86,9 +90,21 @@ def main():
 			if (orcid_id == None):
 				orcid_id = ''
 
-			topic_key = 'T' + str(topic_key_val)
-			# Increment key value for next topic
-			topic_key_val = topic_key_val + 1
+			# Look for duplicates
+			possible_duplicates = []
+			duplicate = False
+			for topic in new_topics:
+				if topic['title'] == title:
+					# If the orcid IDs match and we can't deduplicate
+					if (topic['orcidID'] == orcid_id and orcid_id == ""):
+						topic['Possible_Duplicates'].append(topic_key)
+						possible_duplicates.append(topic['_key'])
+					elif (topic['orcidID'] == orcid_id and orcid_id != ""):
+						# This is a duplicate based on orcid id - we don't need to store it
+						duplicate = True
+			# Skip making a topic for this author
+			if (duplicate):
+				continue
 
 			# Output topic to JSON format
 			topic_json_struct = {}
@@ -103,15 +119,6 @@ def main():
 			topic_json_struct['initials'] = initials
 			topic_json_struct['email'] = email
 			topic_json_struct['orcidID'] = orcid_id
-
-			# Look for duplicates
-			possible_duplicates = []
-			for topic in new_topics:
-				if topic['title'] == title:
-					# If they're both "" this will also be true
-					if (topic['orcidID'] == orcid_id):
-						topic['Possible_Duplicates'].append(topic_key)
-						possible_duplicates.append(topic['_key'])
 			topic_json_struct['Possible_Duplicates'] = possible_duplicates
 
 			# Store in list to output at end
