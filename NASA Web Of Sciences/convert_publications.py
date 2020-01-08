@@ -21,15 +21,19 @@ def main():
 		issn = publication_row['SN']
 		electronic_issn = publication_row['EI']
 		isbn = publication_row['BN']
+		_type = "publication"
 		# Determine which columns to read based off value of ISSN
 		if (issn != ""):
-			title = publication_row['SO'].title()
-			terms = [title, publication_row['J9'].title(), publication_row['JI'].title()]
-			_type = "publication"
+			topic_title = publication_row['SO'].title()
+			terms = [topic_title, publication_row['J9'].title(), publication_row['JI'].title()]
 		else:
-			title = publication_row['SE'].title()
-			terms = [title, publication_row['J9'].title()]
-			_type = "cluster"
+			if (publication_row['SE'] != '' and publication_row['SO'] != ''):
+				topic_title = (publication_row['SE'] + " - " + publication_row['SO']).title()
+			elif (publication_row['SE'] != '' and publication_row['SO'] == ''):
+				topic_title = publication_row['SE'].title()
+			elif (publication_row['SO'] != '' and publication_row['SE'] == ''):
+				topic_title = publication_row['SO'].title()
+			terms = [topic_title, publication_row['J9'].title()]
 
 		# Determine whether conference proceeding or journal
 		conference = False
@@ -37,15 +41,18 @@ def main():
 			conference = True
 
 		# Look for duplicates
-		possible_duplicates = []
 		duplicate = False
 		for topic in new_topics:
-			if topic['title'] == title:
+			if topic['title'] == topic_title:
 				# If the ISSN or ISBN match, assuming there is data, then this is a duplicate
 				if (topic['ISBN'] == isbn and isbn != "") or (topic['ISSN'] == issn and issn != ""):
-					topic['sources'] = topic['sources'] + ', row ' + str(rowidx + 1)
+					topic['sources'] = topic['sources'] + ', row ' + str(rowidx + 2)
 					duplicate = True
-		# Skip making a topic for this author
+				# No data for issn/isbn but electronic issn matches
+				elif (isbn == '' and issn == '' and topic['Electronic_ISSN'] == electronic_issn):
+					topic['sources'] = topic['sources'] + ', row ' + str(rowidx + 2)
+					duplicate = True
+		# Skip making a topic for this publication
 		if (duplicate):
 			continue
 
@@ -57,9 +64,9 @@ def main():
 		topic_json_struct = {}
 		topic_json_struct['_key'] = topic_key
 		topic_json_struct["_type"] = _type
-		topic_json_struct['title'] = title
+		topic_json_struct['title'] = topic_title
 		topic_json_struct['terms'] = terms
-		topic_json_struct['sources'] = "Web of Science, row " + str(rowidx + 1)
+		topic_json_struct['sources'] = "Web of Science, row " + str(rowidx + 2)
 		topic_json_struct['ISSN'] = issn
 		topic_json_struct['Electronic_ISSN'] = electronic_issn
 		topic_json_struct['ISBN'] = isbn
