@@ -91,7 +91,7 @@ def main():
 		new_links.append(link_json_struct)
 
 	# Output topics to file
-	with open('publication_topics.json', 'w') as f:
+	with open('output/publication_topics.json', 'w') as f:
 		# There's probably a better way to output as a list of JSON objects
 		f.write('[')
 		i = 0
@@ -104,7 +104,7 @@ def main():
 			i = i + 1
 		f.write(']')
 	# Output links to file
-	with open('publication_links.json', 'w') as f:
+	with open('output/publication_links.json', 'w') as f:
 		f.write('[')
 		i = 0
 		for link in new_links:

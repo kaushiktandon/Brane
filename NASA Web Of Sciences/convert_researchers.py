@@ -113,7 +113,7 @@ def main():
 			topic_json_struct['title'] = title
 			topic_json_struct['terms'] = terms
 			topic_json_struct['definition'] = ''
-			topic_json_struct['sources'] = "Web of Science, row " + str(rowidx + 1)
+			topic_json_struct['sources'] = "Web of Science, row " + str(rowidx + 2)
 			topic_json_struct['firstName'] = first_name
 			topic_json_struct['lastName'] = last_name
 			topic_json_struct['initials'] = initials
@@ -141,7 +141,7 @@ def main():
 			new_links.append(link_json_struct)
 
 	# Output topics to file
-	with open('researcher_topics.json', 'w') as f:
+	with open('output/researcher_topics.json', 'w') as f:
 		# There's probably a better way to output as a list of JSON objects
 		f.write('[')
 		i = 0
@@ -154,7 +154,7 @@ def main():
 			i = i + 1
 		f.write(']')
 	# Output links to file
-	with open('researcher_links.json', 'w') as f:
+	with open('output/researcher_links.json', 'w') as f:
 		f.write('[')
 		i = 0
 		for link in new_links:
