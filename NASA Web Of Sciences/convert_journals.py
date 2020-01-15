@@ -15,23 +15,15 @@ def convert_publications(data, topic_key_val, link_key_val):
 		electronic_issn = publication_row['EI']
 		isbn = publication_row['BN']
 		_type = "publication"
-		# Determine which columns to read based off value of ISSN
-		if (issn != ""):
+		# Determine which columns to read based off value of ISBN
+		if (isbn == ""):
 			topic_title = publication_row['SO'].title()
 			terms = [topic_title, publication_row['J9'].title(), publication_row['JI'].title()]
+			conference_proceeding = False
 		else:
-			if (publication_row['SE'] != '' and publication_row['SO'] != ''):
-				topic_title = (publication_row['SE'] + " - " + publication_row['SO']).title()
-			elif (publication_row['SE'] != '' and publication_row['SO'] == ''):
-				topic_title = publication_row['SE'].title()
-			elif (publication_row['SO'] != '' and publication_row['SE'] == ''):
-				topic_title = publication_row['SO'].title()
+			topic_title = publication_row['SE'].title()
 			terms = [topic_title, publication_row['J9'].title()]
-
-		# Determine whether conference proceeding or journal
-		conference = False
-		if (publication_row['BN'] != ""):
-			conference = True
+			conference_proceeding = True
 
 		# Look for duplicates
 		duplicate = False
@@ -77,13 +69,13 @@ def convert_publications(data, topic_key_val, link_key_val):
 		link_json_struct['_type'] = 'hasSubclass'
 		link_json_struct['name'] = ''
 		link_json_struct['definition'] = ''
-		link_json_struct['_from'] = 'T12' if conference else 'T11' 
+		link_json_struct['_from'] = 'T12' if conference_proceeding else 'T11' 
 		link_json_struct['_to'] = topic_key
 
 		# Store in list to output at end
 		publication_links.append(link_json_struct)
 	return publication_topics, publication_links, topic_key_val, link_key_val
-
+		
 def parse_month_published(content):
 	if (content == ""):
 		return ""
