@@ -239,16 +239,6 @@ def main():
 		topic_title = publication_row['PU'].title()
 		definition = topic_title + " as for address " + publication_row['PA'].title()
 
-		# Look for duplicates
-		duplicate = False
-		for topic in new_topics:
-			if topic['title'] == topic_title:
-				topic['sources'] = topic['sources'] + ', row ' + str(rowidx + 2)
-				duplicate = True
-		# Skip making a topic for this publisher
-		if (duplicate):
-			continue
-
 		# Find corresponding topic in publication_topics
 		my_row = "row " + str(rowidx + 2) + ','
 		my_row2 = "row " + str(rowidx + 2)
@@ -258,35 +248,46 @@ def main():
 				temporary_topic_struct = topic
 				break
 
-		topic_key = 'T' + str(topic_key_val)
-		# Increment key value for next topic
-		topic_key_val = topic_key_val + 1
+		# Look for duplicates
+		duplicate = False
+		topic_key = ''
+		for topic in new_topics:
+			if topic['title'] == topic_title:
+				topic['sources'] = topic['sources'] + ', row ' + str(rowidx + 2)
+				duplicate = True
+				topic_key = topic['_key']
+		# Only make a topic for this publisher if it is not a duplicate. In that case, we have to link to the publishers cluster.
+		# We have to link to the journal regardless as long as that specific link is not a duplicate. A publisher could have multiple journals, so a row in the dataset could have an already created publisher with a new journal we have not seen yet
+		if (not duplicate):
+			topic_key = 'T' + str(topic_key_val)
+			# Increment key value for next topic
+			topic_key_val = topic_key_val + 1
 
-		# Output topic to JSON format
-		topic_json_struct = {}
-		topic_json_struct['_key'] = topic_key
-		topic_json_struct["_type"] = _type
-		topic_json_struct['title'] = topic_title
-		topic_json_struct['definition'] = definition
-		topic_json_struct['sources'] = "Web of Science, row " + str(rowidx + 2)
+			# Output topic to JSON format
+			topic_json_struct = {}
+			topic_json_struct['_key'] = topic_key
+			topic_json_struct["_type"] = _type
+			topic_json_struct['title'] = topic_title
+			topic_json_struct['definition'] = definition
+			topic_json_struct['sources'] = "Web of Science, row " + str(rowidx + 2)
 
-		# Store in list to output at end
-		new_topics.append(topic_json_struct)
+			# Store in list to output at end
+			new_topics.append(topic_json_struct)
 
-		# (1) Link from publishers cluster to publisher
-		link_key = 'L' + str(link_key_val)
-		# Increment key value for next link
-		link_key_val = link_key_val + 1
-		# Output link to JSON format
-		link_json_struct = {}
-		link_json_struct['_key'] = link_key
-		link_json_struct['_type'] = 'hasInstance'
-		link_json_struct['name'] = ''
-		link_json_struct['definition'] = ''
-		link_json_struct['_from'] = 'T23' 
-		link_json_struct['_to'] = topic_key
-		# Store in list to output at end
-		new_links.append(link_json_struct)
+			# (1) Link from publishers cluster to publisher
+			link_key = 'L' + str(link_key_val)
+			# Increment key value for next link
+			link_key_val = link_key_val + 1
+			# Output link to JSON format
+			link_json_struct = {}
+			link_json_struct['_key'] = link_key
+			link_json_struct['_type'] = 'hasInstance'
+			link_json_struct['name'] = ''
+			link_json_struct['definition'] = ''
+			link_json_struct['_from'] = 'T23' 
+			link_json_struct['_to'] = topic_key
+			# Store in list to output at end
+			new_links.append(link_json_struct)
 
 		# (2) Link publisher to journal
 		link_key = 'L' + str(link_key_val)
@@ -299,12 +300,12 @@ def main():
 		link_json_struct['_type'] = 'link'
 		link_json_struct['name'] = 'publishes'
 		link_json_struct['definition'] = ''
-		link_json_struct['_from'] =  'T23'
+		link_json_struct['_from'] =  topic_key
 		link_json_struct['_to'] = temporary_topic_struct['_key']
 		# Store in list to output at end if link does not already exit
-		if (duplicated_links_dict.get(('T23', temporary_topic_struct['_key'])) == None):
+		if (duplicated_links_dict.get((topic_key, temporary_topic_struct['_key'])) == None):
 			new_links.append(link_json_struct)
-			duplicated_links_dict[('T23', temporary_topic_struct['_key'])] = 1
+			duplicated_links_dict[(topic_key, temporary_topic_struct['_key'])] = 1
 	# G2
 	for rowidx in range(len(data)):
 		# Get current row in dataset
@@ -319,44 +320,45 @@ def main():
 
 			# Look for duplicates
 			duplicate = False
+			topic_key = ''
 			for topic in new_topics:
 				if topic['title'] == topic_title:
 					topic['sources'] = topic['sources'] + ', row ' + str(rowidx + 2)
 					duplicate = True
-			# Skip making a topic for this publisher
-			if (duplicate):
-				continue
+					topic_key = topic['_key']
+			# Only make a topic for this publisher if it is not a duplicate. In that case, we have to link to the research organizations cluster. 
+			# However, linking research organizations to the researcher needs to be done regardless rows refering to the the same research organization may have different researchers
+			if (not duplicate):
+				topic_key = 'T' + str(topic_key_val)
+				# Increment key value for next topic
+				topic_key_val = topic_key_val + 1
 
-			topic_key = 'T' + str(topic_key_val)
-			# Increment key value for next topic
-			topic_key_val = topic_key_val + 1
+				# Output topic to JSON format
+				topic_json_struct = {}
+				topic_json_struct['_key'] = topic_key
+				topic_json_struct["_type"] = _type
+				topic_json_struct['title'] = topic_title
+				topic_json_struct['definition'] = definition
+				topic_json_struct['terms'] = terms
+				topic_json_struct['sources'] = "Web of Science, row " + str(rowidx + 2)
 
-			# Output topic to JSON format
-			topic_json_struct = {}
-			topic_json_struct['_key'] = topic_key
-			topic_json_struct["_type"] = _type
-			topic_json_struct['title'] = topic_title
-			topic_json_struct['definition'] = definition
-			topic_json_struct['terms'] = terms
-			topic_json_struct['sources'] = "Web of Science, row " + str(rowidx + 2)
+				# Store in list to output at end
+				new_topics.append(topic_json_struct)
 
-			# Store in list to output at end
-			new_topics.append(topic_json_struct)
-
-			# (1) Link from research organizations cluster to organization
-			link_key = 'L' + str(link_key_val)
-			# Increment key value for next link
-			link_key_val = link_key_val + 1
-			# Output link to JSON format
-			link_json_struct = {}
-			link_json_struct['_key'] = link_key
-			link_json_struct['_type'] = 'hasInstance'
-			link_json_struct['name'] = ''
-			link_json_struct['definition'] = ''
-			link_json_struct['_from'] = 'T22' 
-			link_json_struct['_to'] = topic_key
-			# Store in list to output at end
-			new_links.append(link_json_struct)
+				# (1) Link from research organizations cluster to organization
+				link_key = 'L' + str(link_key_val)
+				# Increment key value for next link
+				link_key_val = link_key_val + 1
+				# Output link to JSON format
+				link_json_struct = {}
+				link_json_struct['_key'] = link_key
+				link_json_struct['_type'] = 'hasInstance'
+				link_json_struct['name'] = ''
+				link_json_struct['definition'] = ''
+				link_json_struct['_from'] = 'T22' 
+				link_json_struct['_to'] = topic_key
+				# Store in list to output at end
+				new_links.append(link_json_struct)
 
 			# (2) Link research organizations to researcher
 			# Researchers does not follow the same method of adding row x, row y to sources. We have a last name and a first initial, but that is not enough due to duplicate names. We cannot rely on topic['sources'] either
@@ -375,7 +377,8 @@ def main():
 					researcher_key = researchers_name_to_key.get(form_author_name(first, last))
 			# This is possible and is due to different spellings of the name. There are 7 researchers where this occurs
 			if researcher_key == None:
-				print(flipped_name + " on row " + str(rowidx + 2) + " could not be found in the created researchers")
+				pass
+				# print(flipped_name + " on row " + str(rowidx + 2) + " could not be found in the created researchers")
 			else:
 				link_key = 'L' + str(link_key_val)
 				# Increment key value for next link
