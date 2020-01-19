@@ -242,7 +242,8 @@ def main():
 			# Store in list to output at end if link does not already exit
 			if (duplicated_links_dict.get((temporary_topic_struct['_key'], "T14")) == None):
 				new_links.append(link_json_struct)
-				duplicated_links_dict[(temporary_topic_struct['_key'], "T14")] = 1
+		# This can only be marked at the end of the first run, otherwise there will only be one link, when actually we want 'duplicate links' with different values
+		duplicated_links_dict[(temporary_topic_struct['_key'], "T14")] = 1
 
 
 		# (3) Link to property publication type
