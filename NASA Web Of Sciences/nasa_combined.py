@@ -9,6 +9,270 @@ import csv
 import numpy as np
 import pandas as pd
 
+class Convert_Clusters():
+	def __init__(self):
+		print("Create clusters")
+	def convert_clusters(self):
+		cluster_topics = list()
+		cluster_links = list()
+		properties = dict()
+
+		# Create generic properties
+		properties['_key'] = ''
+		properties['_type'] = ''
+		properties['title'] = ""
+		properties['terms'] = ''
+		properties['definition'] = ''
+		properties['sources'] = ''
+		properties['firstName'] = ''
+		properties['lastName'] = ''
+		properties['initials'] = ''
+		properties['email'] = ''
+		properties['orcidID'] = ''
+		properties['Possible_Duplicates'] = ''
+		properties['Notes'] = ''
+		properties['valueType'] = ''
+
+		# T1
+		properties['_key'] = 'T1'
+		properties['_type'] = 'system'
+		properties['title'] = "ISS investigation"
+		cluster_topics.append(self.create_topic(properties))
+		# T2
+		properties['_key'] = 'T2'
+		properties['_type'] = 'cluster'
+		properties['title'] = "Individual"
+		cluster_topics.append(self.create_topic(properties))
+		# T3
+		properties['_key'] = 'T3'
+		properties['_type'] = 'cluster'
+		properties['title'] = "Researcher"
+		cluster_topics.append(self.create_topic(properties))
+		# T4
+		properties['_key'] = 'T4'
+		properties['_type'] = 'cluster'
+		properties['title'] = "Event"
+		cluster_topics.append(self.create_topic(properties))
+		# T5
+		properties['_key'] = 'T5'
+		properties['_type'] = 'cluster'
+		properties['title'] = "Conference"
+		cluster_topics.append(self.create_topic(properties))
+		# T6
+		properties['_key'] = 'T6'
+		properties['_type'] = 'cluster'
+		properties['title'] = "Workshop"
+		cluster_topics.append(self.create_topic(properties))
+		# T7
+		properties['_key'] = 'T7'
+		properties['_type'] = 'cluster'
+		properties['title'] = "Symposium"
+		cluster_topics.append(self.create_topic(properties))
+		# T8
+		properties['_key'] = 'T8'
+		properties['_type'] = 'cluster'
+		properties['title'] = "Congress"
+		cluster_topics.append(self.create_topic(properties))
+		# T9
+		properties['_key'] = 'T9'
+		properties['_type'] = 'cluster'
+		properties['title'] = "Meeting"
+		cluster_topics.append(self.create_topic(properties))
+		# T10
+		properties['_key'] = 'T10'
+		properties['_type'] = 'cluster'
+		properties['title'] = "Publication"
+		cluster_topics.append(self.create_topic(properties))
+		# T11
+		properties['_key'] = 'T11'
+		properties['_type'] = 'cluster'
+		properties['title'] = "Journal"
+		cluster_topics.append(self.create_topic(properties))
+		# T12
+		properties['_key'] = 'T12'
+		properties['_type'] = 'cluster'
+		properties['title'] = "Conference Proceeding"
+		cluster_topics.append(self.create_topic(properties))
+		# T13
+		properties['_key'] = 'T13'
+		properties['_type'] = 'cluster'
+		properties['title'] = "Article"
+		cluster_topics.append(self.create_topic(properties))
+		# T14
+		properties['_key'] = 'T14'
+		properties['_type'] = 'property'
+		properties['title'] = "Access type"
+		properties['valueType'] = 'String'		
+		cluster_topics.append(self.create_topic(properties))
+		# T15
+		properties['_key'] = 'T15'
+		properties['_type'] = 'property'
+		properties['title'] = "Download date"
+		properties['valueType'] = 'Date'		
+		cluster_topics.append(self.create_topic(properties))
+		# T16
+		properties['_key'] = 'T16'
+		properties['_type'] = 'property'
+		properties['title'] = "Publication type"
+		properties['valueType'] = 'String'		
+		cluster_topics.append(self.create_topic(properties))
+		# T17
+		properties['_key'] = 'T17'
+		properties['_type'] = 'property'
+		properties['title'] = "Language"
+		properties['valueType'] = 'String'		
+		cluster_topics.append(self.create_topic(properties))
+		# T18
+		properties['_key'] = 'T18'
+		properties['_type'] = 'property'
+		properties['title'] = "Published date"
+		properties['valueType'] = 'Date'		
+		cluster_topics.append(self.create_topic(properties))
+		# T19
+		properties['_key'] = 'T19'
+		properties['_type'] = 'property'
+		properties['title'] = "Document type"
+		properties['valueType'] = 'String'		
+		cluster_topics.append(self.create_topic(properties))
+		# T20
+		properties['_key'] = 'T20'
+		properties['_type'] = 'property'
+		properties['title'] = "Conference year"
+		properties['valueType'] = 'String'		
+		cluster_topics.append(self.create_topic(properties))
+		# T21
+		properties['_key'] = 'T21'
+		properties['_type'] = 'cluster'
+		properties['title'] = "Organization"
+		properties['valueType'] = ''		
+		cluster_topics.append(self.create_topic(properties))
+		# T22
+		properties['_key'] = 'T22'
+		properties['_type'] = 'cluster'
+		properties['title'] = "Research organization"
+		cluster_topics.append(self.create_topic(properties))
+		# T23
+		properties['_key'] = 'T23'
+		properties['_type'] = 'cluster'
+		properties['title'] = "Publisher"
+		cluster_topics.append(self.create_topic(properties))
+		# T24
+		properties['_key'] = 'T24'
+		properties['_type'] = 'cluster'
+		properties['title'] = "Untagged keyword"
+		cluster_topics.append(self.create_topic(properties))
+
+		# Create Links
+		properties = dict()
+		properties['_key'] = ''
+		properties['_type'] = ''
+		properties['name'] = ''
+		properties['definition'] = ''
+		properties['_from'] = ''
+		properties['_to'] = ''
+		# L1
+		properties['_key'] = 'L1'
+		properties['_type'] = 'encompasses'
+		properties['_from'] = 'T1'
+		properties['_to'] = 'T2'
+		cluster_links.append(self.create_link(properties))
+		# L2
+		properties['_key'] = 'L2'
+		properties['_type'] = 'encompasses'
+		properties['_from'] = 'T1'
+		properties['_to'] = 'T4'
+		cluster_links.append(self.create_link(properties))
+		# L3
+		properties['_key'] = 'L3'
+		properties['_type'] = 'encompasses'
+		properties['_from'] = 'T1'
+		properties['_to'] = 'T10'
+		cluster_links.append(self.create_link(properties))
+		# L4
+		properties['_key'] = 'L4'
+		properties['_type'] = 'encompasses'
+		properties['_from'] = 'T1'
+		properties['_to'] = 'T21'
+		cluster_links.append(self.create_link(properties))
+		# L5
+		properties['_key'] = 'L5'
+		properties['_type'] = 'hasSubclass'
+		properties['_from'] = 'T2'
+		properties['_to'] = 'T3'
+		cluster_links.append(self.create_link(properties))
+		# L6
+		properties['_key'] = 'L6'
+		properties['_type'] = 'hasSubclass'
+		properties['_from'] = 'T4'
+		properties['_to'] = 'T5'
+		cluster_links.append(self.create_link(properties))
+		# L7
+		properties['_key'] = 'L7'
+		properties['_type'] = 'hasSubclass'
+		properties['_from'] = 'T4'
+		properties['_to'] = 'T6'
+		cluster_links.append(self.create_link(properties))
+		# L8
+		properties['_key'] = 'L8'
+		properties['_type'] = 'hasSubclass'
+		properties['_from'] = 'T4'
+		properties['_to'] = 'T7'
+		cluster_links.append(self.create_link(properties))
+		# L9
+		properties['_key'] = 'L9'
+		properties['_type'] = 'hasSubclass'
+		properties['_from'] = 'T4'
+		properties['_to'] = 'T8'
+		cluster_links.append(self.create_link(properties))
+		# L10
+		properties['_key'] = 'L10'
+		properties['_type'] = 'hasSubclass'
+		properties['_from'] = 'T4'
+		properties['_to'] = 'T9'
+		cluster_links.append(self.create_link(properties))
+		# L11
+		properties['_key'] = 'L11'
+		properties['_type'] = 'hasSubclass'
+		properties['_from'] = 'T10'
+		properties['_to'] = 'T11'
+		cluster_links.append(self.create_link(properties))
+		# L12
+		properties['_key'] = 'L12'
+		properties['_type'] = 'hasSubclass'
+		properties['_from'] = 'T10'
+		properties['_to'] = 'T12'
+		cluster_links.append(self.create_link(properties))
+		# L13
+		properties['_key'] = 'L13'
+		properties['_type'] = 'hasSubclass'
+		properties['_from'] = 'T10'
+		properties['_to'] = 'T13'
+		cluster_links.append(self.create_link(properties))
+		# L14
+		properties['_key'] = 'L14'
+		properties['_type'] = 'hasSubclass'
+		properties['_from'] = 'T21'
+		properties['_to'] = 'T22'
+		cluster_links.append(self.create_link(properties))
+		# L15
+		properties['_key'] = 'L15'
+		properties['_type'] = 'hasSubclass'
+		properties['_from'] = 'T21'
+		properties['_to'] = 'T23'
+		cluster_links.append(self.create_link(properties))
+
+		return cluster_topics, cluster_links, len(cluster_topics) + 1, len(cluster_links) + 1
+	def create_topic(self, properties):
+		topic_json_struct = {}
+		for prop, value in properties.items():
+			topic_json_struct[prop] = value
+		return topic_json_struct
+	def create_link(self, properties):
+		link_json_struct = {}
+		for prop, value in properties.items():
+			link_json_struct[prop] = value
+		return link_json_struct
+
 class Convert_Researchers():
 	def __init__(self):
 		print("Protocol B")
@@ -473,6 +737,7 @@ class Convert_Articles():
 			pubMedID = publication_row['PM']
 			date_downloaded = publication_row['DA']
 			grants = publication_row['FU']
+			cited_reference = publication_row['CR']
 
 			# Look for duplicates
 			duplicate = False
@@ -532,6 +797,7 @@ class Convert_Articles():
 			topic_json_struct['PubMedID'] = pubMedID
 			topic_json_struct['date downloaded'] = date_downloaded
 			topic_json_struct['grants'] = grants
+			topic_json_struct['cited reference'] = cited_reference
 
 			# Store in list to output at end
 			article_topics.append(topic_json_struct)
@@ -1098,9 +1364,15 @@ def main():
 	data = pd.read_csv("data.csv")
 	data = data.fillna('')
 	# Starting at key value T24 for topics
-	topic_key_val = 24
+	# topic_key_val = 24
 	# Starting at key value L23 for links
-	link_key_val = 23
+	# link_key_val = 23
+
+	print("Creating clusters")
+	cluster_runner = Convert_Clusters()
+	cluster_topics, cluster_links, topic_key_val, link_key_val = cluster_runner.convert_clusters()
+	new_topics = add_new_topics(new_topics, cluster_topics)
+	new_links = add_new_links(new_links, cluster_links)
 
 	print("Converting researchers")
 	researcher_runner = Convert_Researchers()

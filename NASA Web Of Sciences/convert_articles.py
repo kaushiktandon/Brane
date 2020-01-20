@@ -483,6 +483,7 @@ def main():
 		pubMedID = publication_row['PM']
 		date_downloaded = publication_row['DA']
 		grants = publication_row['FU']
+		cited_reference = publication_row['CR']
 
 		# Look for duplicates
 		duplicate = False
@@ -542,6 +543,7 @@ def main():
 		topic_json_struct['PubMedID'] = pubMedID
 		topic_json_struct['date downloaded'] = date_downloaded
 		topic_json_struct['grants'] = grants
+		topic_json_struct['cited reference'] = cited_reference
 
 		# Store in list to output at end
 		new_topics.append(topic_json_struct)
