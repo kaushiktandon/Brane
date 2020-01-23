@@ -1136,6 +1136,98 @@ class Convert_Events():
 class Convert_Organizations():
 	def __init__(self):
 		print("Protocol G")
+	def post_process_organizations(self, organization_topics):
+		terms = dict()
+		terms['Univ'] = 'University'
+		terms['Amer'] = 'American'
+		terms['Assoc'] = 'Association'
+		terms['Soc'] = 'Society'
+		terms['Int'] = 'International'
+		terms['Inst'] = 'Institute'
+		terms['Acad'] = 'Academy'
+		terms['Sci'] = 'Science'
+		terms['Appl'] = 'Applied'
+		terms['Natl'] = 'National'
+		terms['Extraterr'] = 'Extraterrestrial'
+		terms['Mech'] = 'Mechanics'
+		terms['Calif'] = 'California'
+		terms['Technol'] = 'Technology'
+		terms['Ctr'] = 'Center'
+		terms['Nucl'] = 'Nuclear'
+		terms['Explorat'] = 'Exploration'
+		terms['Agcy'] = 'Agency'
+		terms['Mol'] = 'Molecular'
+		terms['Physiol'] = 'Physiology'
+		terms['Hlth'] = 'Health'
+		terms['Fdn'] = 'Foundation'
+		terms['Hosp'] = 'Hospital'
+		terms['Sch'] = 'School'
+		terms['Res'] = 'Research'
+		terms['Math'] = 'Mathematics'
+		terms['Aeron'] = 'Aeronomy'
+		terms['Genet'] = 'Genetics'
+		terms['Select'] = 'Selection'
+		terms['Ind'] = 'Industrial'
+		terms['Grp'] = 'Group'
+		terms['Engn'] = 'Engineering'
+		terms['Atmospher'] = 'Atmospheric'
+		terms['Pharmaceut'] = 'Pharmaceutical'
+		terms['Coll'] = 'College'
+		terms['Lab'] = 'Laboratory'
+		terms['Biochem'] = 'Biochemistry'
+		terms['Hop'] = 'Hopital'
+		terms['Fac'] = 'Faculty'
+		terms['Prop'] = 'Propulsion'
+		terms['Nutr'] = 'Nutritional'
+		terms['Dept'] = 'Department'
+		terms['Federat'] = 'Federation'
+		terms['Promot'] = 'Promotion'
+		terms['Informat'] = 'Information'
+		terms['Commun'] = 'Communication'
+		terms['Ecol'] = 'Ecology'
+		terms['Techn'] = 'Techniques'
+		terms['Solut'] = 'Solutions'
+		terms['Adm'] = 'Administration'
+		terms['Vet'] = 'Veterans'
+		terms['Tech'] = 'Technology'
+		terms['Radiol'] = 'Radiological'
+		terms['Environm'] = 'Environmental'
+		terms['Syst'] = 'Systems'
+		terms['Off'] = 'Office'
+		terms['Rech'] = 'Recherches'
+		terms['Meteorol'] = 'Meteorological'
+		terms['Minist'] = 'Ministry'
+		terms['Canc'] = 'Cancer'
+		terms['Biosci'] = 'Bioscience'
+		terms['Bldg'] = 'Building'
+		terms['Cent'] = 'Central'
+		terms['Surg'] = 'Surgery'
+		terms['Operat'] = 'Operations'
+		terms['Adv'] = 'Advanced'
+		terms['So'] = 'Southern'
+		terms['S'] = 'Southern'
+		terms['Infect'] = 'Infection'
+		terms['Biol'] = 'Biology'
+		terms['Dynam'] = 'Dynamics'
+		terms['Corp'] = 'Corportation'
+		terms['Gen'] = 'General'
+		terms['Utilizat'] = 'Utilization'
+		terms['Promot'] = 'Promotion'
+		terms['Isl'] = 'Island'	
+
+		for topic in organization_topics:
+			topic_title = topic['title']
+			words_in_title = topic_title.split(" ")
+			temp_topic_title = ""
+			for index, word in enumerate(words_in_title):
+				if index == 0 and word == 'Univ':
+					word = 'University of'
+				else:
+					word = terms.get(word) or word
+				temp_topic_title = temp_topic_title + " " + word
+			topic['title'] = temp_topic_title.strip()
+		return organization_topics
+
 	# Protocol G main function to run
 	def convert_organizations(self, data, topic_key_val, link_key_val, researcher_topics, publication_topics):
 		organization_topics = list()
@@ -1313,6 +1405,7 @@ class Convert_Organizations():
 					if (duplicated_links_dict.get((researcher_key, topic_key)) == None):
 						organization_links.append(link_json_struct)
 						duplicated_links_dict[(researcher_key, topic_key)] = 1
+		organization_topics = self.post_process_organizations(organization_topics)
 		return organization_topics, organization_links, topic_key_val, link_key_val
 
 # General helper function
