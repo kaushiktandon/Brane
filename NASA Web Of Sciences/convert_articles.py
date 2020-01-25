@@ -483,7 +483,7 @@ def main():
 		pubMedID = publication_row['PM']
 		date_downloaded = publication_row['DA']
 		grants = publication_row['FU']
-		cited_reference = publication_row['CR']
+		cited_reference = [x.strip() for x in publication_row['CR'].split(';')]
 
 		# Look for duplicates
 		duplicate = False
@@ -503,6 +503,16 @@ def main():
 			if my_row in topic['sources'] or topic['sources'].endswith(my_row2):
 				temporary_journal_topic_struct = topic
 				break
+
+		# Find corresponding created topic in publication_topics
+		my_row = "row " + str(rowidx + 2) + ','
+		my_row2 = "row " + str(rowidx + 2)
+		temporary_publication_topic_struct = {}
+		for topic in publication_topics:
+			if my_row in topic['sources'] or topic['sources'].endswith(my_row2):
+				temporary_publication_topic_struct = topic
+				break
+
 		# Inherit certain properties from this topic
 		journal_key = temporary_journal_topic_struct['_key']
 		issn = temporary_journal_topic_struct['ISSN']
@@ -513,6 +523,8 @@ def main():
 		volume = temporary_journal_topic_struct['volume']
 		issue = temporary_journal_topic_struct['issue']
 		part = temporary_journal_topic_struct['part']
+		journal = temporary_publication_topic_struct['title']
+		print(journal)
 
 		topic_key = 'T' + str(topic_key_val)
 		# Increment key value for next topic
@@ -544,6 +556,7 @@ def main():
 		topic_json_struct['date downloaded'] = date_downloaded
 		topic_json_struct['grants'] = grants
 		topic_json_struct['cited reference'] = cited_reference
+		topic_json_struct['journal'] = journal
 
 		# Store in list to output at end
 		new_topics.append(topic_json_struct)
