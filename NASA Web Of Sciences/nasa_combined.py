@@ -410,16 +410,17 @@ class Convert_Publications():
 			issn = publication_row['SN']
 			electronic_issn = publication_row['EI']
 			isbn = publication_row['BN']
-			_type = "publication"
 			# Determine which columns to read based off value of ISBN
 			if (isbn == ""):
 				topic_title = publication_row['SO'].title()
 				terms = [topic_title, publication_row['J9'].title(), publication_row['JI'].title()]
 				conference_proceeding = False
+				_type = "journal"
 			else:
 				topic_title = publication_row['SE'].title()
 				terms = [topic_title, publication_row['J9'].title()]
 				conference_proceeding = True
+				_type = "journal"
 
 			# Look for duplicates
 			duplicate = False
@@ -1256,7 +1257,7 @@ class Convert_Organizations():
 			# Set properties
 			_type = "topic"
 			topic_title = publication_row['PU'].title()
-			definition = topic_title + " as for address " + publication_row['PA'].title()
+			definition = topic_title + " has address " + publication_row['PA'].title()
 
 			# Find corresponding topic in publication_topics
 			my_row = "row " + str(rowidx + 2) + ','
