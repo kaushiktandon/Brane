@@ -1026,10 +1026,744 @@ def create_link(properties):
 	for prop, value in properties.items():
 		link_json_struct[prop] = value
 	return link_json_struct
+class Convert_Researchers():
+	def __init__(self):
+		print("Protocol B")
+	def parse_orcid_id(self, row, authors):
+		orcidIDs = dict()
+		if (row == ''):
+			return orcidIDs
+		# First check for /xxxx-xxxx-xxxx-xxxx versus lastName, firstName/xxxx-xxxx-xxxx-xxxx
+		if row[0] == '/':
+			# In this case, we need the author name. I will assume it is the first, and hopefully only, author
+			first_name, last_name = parse_author(authors[0])
+			author = form_author_name(first_name, last_name)
+			orcid_id = row[1:]
+			orcidIDs[author] = orcid_id
+		else:
+			# If there is more than one, they will be separated by ;.
+			if (row.find(';') == -1):
+				# Only one orcidId
+				reversed_author = parse_author(row[:row.find('/')])
+				author = form_author_name(reversed_author[0], reversed_author[1])
 
-def convert_investigations(data, topic_key_val, link_key_val, subcategory_topics):
+				orcid_id = row[row.find('/') + 1:]
+				# print(row, author, orcid_id)
+				orcidIDs[author] = orcid_id
+			else:
+				# There are multiple
+				elements = row.split(';')
+				for element in elements:
+					if (element != '' and element.find(',') != -1):
+						reversed_author = parse_author(element[:element.find('/')])
+						author = form_author_name(reversed_author[0], reversed_author[1])
+
+						orcid_id = element[element.find('/') + 1:]
+						orcidIDs[author] = orcid_id
+
+		return orcidIDs
+
+	# Protocol B main function to run
+	def convert_researchers(self, data, topic_key_val, link_key_val):
+		researcher_topics = list()
+		researcher_links = list()
+
+		for rowidx in range(len(data)):
+			# Get current row in dataset
+			publication_row = data.iloc[rowidx,:]
+			# Get the authors using the AF key
+			authors = publication_row['AF'].split(";")
+			reprint_address_last_name = publication_row['RP'].split(",")[0].title()
+			orcidIDs = self.parse_orcid_id(publication_row['OI'], authors)
+			for author in authors:
+				# Check for incorrectly formatted name - very rare, but has to be done
+				if (author.find(',') == -1):
+					# Skip if no comma
+					continue
+				topic_key = 'T' + str(topic_key_val)
+				# Increment key value for next topic
+				topic_key_val = topic_key_val + 1
+
+				first_name, last_name = parse_author(author)
+				initials = first_name[0] + "." + last_name[0] + "."
+				terms = [form_author_name(first_name, last_name), last_name, initials]
+				title = form_author_name(first_name, last_name)
+
+				if (last_name == reprint_address_last_name):
+					email = publication_row['EM']
+				else:
+					email = ""
+
+				orcid_id = orcidIDs.get(title)
+				if (orcid_id == None):
+					orcid_id = ''
+
+				# Look for duplicates
+				possible_duplicates = []
+				duplicate = False
+				for topic in researcher_topics:
+					if topic['title'] == title:
+						# If the orcid IDs match and we can't deduplicate
+						if (topic['orcidID'] == orcid_id and orcid_id == ""):
+							topic['Possible_Duplicates'].append(topic_key)
+							possible_duplicates.append(topic['_key'])
+						elif (topic['orcidID'] == orcid_id and orcid_id != ""):
+							# This is a duplicate based on orcid id - we don't need to store it
+							duplicate = True
+				# Skip making a topic for this author
+				if (duplicate):
+					continue
+
+				# Output topic to JSON format
+				topic_json_struct = {}
+				topic_json_struct['_key'] = topic_key
+				topic_json_struct["_type"] = "individual"
+				topic_json_struct['title'] = title
+				topic_json_struct['terms'] = terms
+				topic_json_struct['definition'] = ''
+				topic_json_struct['sources'] = "Web of Science, row " + str(rowidx + 2)
+				topic_json_struct['firstName'] = first_name
+				topic_json_struct['lastName'] = last_name
+				topic_json_struct['initials'] = initials
+				topic_json_struct['email'] = email
+				topic_json_struct['orcidID'] = orcid_id
+				topic_json_struct['Possible_Duplicates'] = possible_duplicates
+
+				# Store in list to output at end
+				researcher_topics.append(topic_json_struct)
+
+				link_key = 'L' + str(link_key_val)
+				# Increment key value for next link
+				link_key_val = link_key_val + 1
+
+				# Output link to JSON format
+				link_json_struct = {}
+				link_json_struct['_key'] = link_key
+				link_json_struct['_type'] = 'hasInstance'
+				link_json_struct['name'] = ''
+				link_json_struct['definition'] = ''
+				link_json_struct['_from'] = 'T3'
+				link_json_struct['_to'] = topic_key
+
+				# Store in list to output at end
+				researcher_links.append(link_json_struct)
+		return researcher_topics, researcher_links, topic_key_val, link_key_val
+
+class Convert_Publications():
+	def __init__(self):
+		print("Protocol C")
+	# Protocol C main function to run
+	def convert_publications(self, data, topic_key_val, link_key_val):
+		publication_topics = list()
+		publication_links = list()
+
+		for rowidx in range(len(data)):
+			# Get current row in dataset
+			publication_row = data.iloc[rowidx,:]
+			issn = publication_row['SN']
+			electronic_issn = publication_row['EI']
+			isbn = publication_row['BN']
+			# Determine which columns to read based off value of ISBN
+			if (isbn == ""):
+				topic_title = publication_row['SO'].title()
+				terms = [topic_title, publication_row['J9'].title(), publication_row['JI'].title()]
+				conference_proceeding = False
+				_type = "journal"
+			else:
+				topic_title = publication_row['SE'].title()
+				terms = [topic_title, publication_row['J9'].title()]
+				conference_proceeding = True
+				_type = "journal"
+
+			# Look for duplicates
+			duplicate = False
+			for topic in publication_topics:
+				if topic['title'] == topic_title:
+					# If the ISSN or ISBN match, assuming there is data, then this is a duplicate
+					if (topic['ISBN'] == isbn and isbn != "") or (topic['ISSN'] == issn and issn != ""):
+						topic['sources'] = topic['sources'] + ', row ' + str(rowidx + 2)
+						duplicate = True
+					# No data for issn/isbn but electronic issn matches
+					elif (isbn == '' and issn == '' and topic['Electronic_ISSN'] == electronic_issn):
+						topic['sources'] = topic['sources'] + ', row ' + str(rowidx + 2)
+						duplicate = True
+			# Skip making a topic for this publication
+			if (duplicate):
+				continue
+
+			topic_key = 'T' + str(topic_key_val)
+			# Increment key value for next topic
+			topic_key_val = topic_key_val + 1
+
+			# Output topic to JSON format
+			topic_json_struct = {}
+			topic_json_struct['_key'] = topic_key
+			topic_json_struct["_type"] = _type
+			topic_json_struct['title'] = topic_title
+			topic_json_struct['terms'] = terms
+			topic_json_struct['sources'] = "Web of Science, row " + str(rowidx + 2)
+			topic_json_struct['ISSN'] = issn
+			topic_json_struct['Electronic_ISSN'] = electronic_issn
+			topic_json_struct['ISBN'] = isbn
+
+			# Store in list to output at end
+			publication_topics.append(topic_json_struct)
+
+			link_key = 'L' + str(link_key_val)
+			# Increment key value for next link
+			link_key_val = link_key_val + 1
+
+			# Output link to JSON format
+			link_json_struct = {}
+			link_json_struct['_key'] = link_key
+			link_json_struct['_type'] = 'hasSubclass'
+			link_json_struct['name'] = ''
+			link_json_struct['definition'] = ''
+			link_json_struct['_from'] = 'T12' if conference_proceeding else 'T11' 
+			link_json_struct['_to'] = topic_key
+
+			# Store in list to output at end
+			publication_links.append(link_json_struct)
+		return publication_topics, publication_links, topic_key_val, link_key_val
+
+class Convert_Journals():
+	def __init__(self):
+		print("Protocol D")
+	def parse_month_published(self, content):
+		if (content == ""):
+			return ""
+		# Could be 26-Sep, OCT, SEP-OCT
+		content = content.upper()
+		if ('-' in content):
+			content = content[content.find('-')+1:]
+		if content == "JAN":
+			return "01"
+		elif content == "FEB":
+			return "02"
+		elif content == "MAR":
+			return "03"
+		elif content == "APR":
+			return "04"
+		elif content == "MAY":
+			return "05"
+		elif content == "JUN":
+			return "06"
+		elif content == "JUL":
+			return "07"
+		elif content == "AUG":
+			return "08"
+		elif content == "SEP":
+			return "09"
+		elif content == "OCT":
+			return "10"
+		elif content == "NOV":
+			return "11"
+		else:
+			return "12"
+	def determine_property_access_link_value(self, content):
+		if content == '':
+			return ["Traditional Publishing"]
+		else:
+			if "," in content:
+				output = []
+				strs = content.split(",")
+				for element in strs:
+					output.append(element.strip() + " Open Access")
+				return output
+			else:
+				return [content + " Open Access"]
+
+	# Protocol D main function to run
+	def convert_journals(self, data, topic_key_val, link_key_val, publication_topics):
+		journal_topics = list()
+		journal_links = list()
+		
+		# This dict will tell us if links are already going to be created. Keyed by (from, to), value doesn't matter
+		duplicated_links_dict = dict()
+
+		for rowidx in range(len(data)):
+			# Get current row in dataset
+			publication_row = data.iloc[rowidx,:]
+
+			# Find corresponding topic in publication_topics
+			my_row = "row " + str(rowidx + 2) + ','
+			my_row2 = "row " + str(rowidx + 2)
+			temporary_topic_struct = {}
+			for topic in publication_topics:
+				if my_row in topic['sources'] or topic['sources'].endswith(my_row2):
+					temporary_topic_struct = topic
+					break
+
+			month_published = self.parse_month_published(publication_row['PD'])
+			year_published = str(publication_row['PY'])
+			volume = str(publication_row['VL'])
+			issue = str(publication_row['IS'])
+			part = str(publication_row['PN'])
+
+			# Determine title for this journal instance
+			topic_title = 'Volume '
+			if volume == '':
+				topic_title = topic_title + year_published
+			else:
+				topic_title = topic_title + volume
+
+			if issue != '':
+				topic_title = topic_title + ', Issue ' + issue
+			if part != '':
+				topic_title = topic_title + ', Part ' + part
+
+			if month_published != '':
+				topic_title = topic_title + ', ' + month_published + '-' + year_published + ' - ' + temporary_topic_struct['title']
+			else:
+				topic_title = topic_title + ', ' + year_published + ' - ' + temporary_topic_struct['title']
+			# Terms is just the topic title
+			terms = [topic_title]
+
+			# Look for duplicates
+			duplicate = False
+			for topic in journal_topics:
+				if topic['title'] == topic_title:
+					topic['sources'] = topic['sources'] + ', row ' + str(rowidx + 2)
+					duplicate = True
+			# Skip making a topic for this publication
+			if (duplicate):
+				continue
+
+			topic_key = 'T' + str(topic_key_val)
+			# Increment key value for next topic
+			topic_key_val = topic_key_val + 1
+
+			# Output topic to JSON format
+			topic_json_struct = {}
+			topic_json_struct['_key'] = topic_key
+			topic_json_struct["_type"] = 'publication'
+			topic_json_struct['title'] = topic_title
+			topic_json_struct['terms'] = terms
+			topic_json_struct['sources'] = "Web of Science, row " + str(rowidx + 2)
+			topic_json_struct['month published'] = month_published
+			topic_json_struct['year published'] = year_published
+			topic_json_struct['volume'] = volume
+			topic_json_struct['issue'] = issue
+			topic_json_struct['part'] = part
+			topic_json_struct['ISSN'] = temporary_topic_struct['ISSN']
+			topic_json_struct['Electronic_ISSN'] = temporary_topic_struct['Electronic_ISSN']
+			topic_json_struct['ISBN'] = temporary_topic_struct['ISBN']
+			# Store in list to output at end
+			journal_topics.append(topic_json_struct)
+
+			# (1) Link from journal to instance
+			link_key = 'L' + str(link_key_val)
+			# Increment key value for next link
+			link_key_val = link_key_val + 1
+			# Output link to JSON format
+			link_json_struct = {}
+			link_json_struct['_key'] = link_key
+			link_json_struct['_type'] = 'hasInstance'
+			link_json_struct['name'] = ''
+			link_json_struct['definition'] = ''
+			link_json_struct['_from'] = temporary_topic_struct['_key'] 
+			link_json_struct['_to'] = topic_key
+			# Store in list to output at end
+			journal_links.append(link_json_struct)
+
+			# (2) Link to property access type
+			access_values = self.determine_property_access_link_value(publication_row['OA'])
+			for value in access_values:
+				link_key = 'L' + str(link_key_val)
+				# Increment key value for next link
+				link_key_val = link_key_val + 1
+				# Output link to JSON format
+				link_json_struct = {}
+				link_json_struct['_key'] = link_key
+				link_json_struct['_type'] = 'has'
+				link_json_struct['name'] = ''
+				link_json_struct['definition'] = ''
+				link_json_struct['_from'] = temporary_topic_struct['_key'] 
+				link_json_struct['_to'] = "T14"
+				link_json_struct['value'] = value
+				# Store in list to output at end if link does not already exit
+				if (duplicated_links_dict.get((temporary_topic_struct['_key'], "T14")) == None):
+					journal_links.append(link_json_struct)
+			# This can only be marked at the end of the first run, otherwise there will only be one link, when actually we want 'duplicate links' with different values
+			duplicated_links_dict[(temporary_topic_struct['_key'], "T14")] = 1
+
+
+			# (3) Link to property publication type
+			link_key = 'L' + str(link_key_val)
+			# Increment key value for next link
+			link_key_val = link_key_val + 1
+
+			value = ''
+			if publication_row['PT'] == 'J':
+				value = "Journal"
+			elif publication_row['PT'] == 'S':
+				value = "Series"
+			elif publication_row['PT'] == 'P':
+				value = 'Patent'
+			elif publication_row['PT'] == 'B':
+				value = 'Book'
+			# Output link to JSON format
+			link_json_struct = {}
+			link_json_struct['_key'] = link_key
+			link_json_struct['_type'] = 'has'
+			link_json_struct['name'] = ''
+			link_json_struct['definition'] = ''
+			link_json_struct['_from'] = temporary_topic_struct['_key'] 
+			link_json_struct['_to'] = "T16"
+			link_json_struct['value'] = value
+			# Store in list to output at end if link does not already exit
+			if (duplicated_links_dict.get((temporary_topic_struct['_key'], "T16")) == None):
+				journal_links.append(link_json_struct)
+				duplicated_links_dict[(temporary_topic_struct['_key'], "T16")] = 1
+
+			# (4) Link to property Language
+			link_key = 'L' + str(link_key_val)
+			# Increment key value for next link
+			link_key_val = link_key_val + 1
+
+			# Output link to JSON format
+			link_json_struct = {}
+			link_json_struct['_key'] = link_key
+			link_json_struct['_type'] = 'has'
+			link_json_struct['name'] = ''
+			link_json_struct['definition'] = ''
+			link_json_struct['_from'] = temporary_topic_struct['_key'] 
+			link_json_struct['_to'] = "T17"
+			link_json_struct['value'] = publication_row['LA']
+			# Store in list to output at end if link does not already exit
+			if (duplicated_links_dict.get((temporary_topic_struct['_key'], "T17")) == None):
+				journal_links.append(link_json_struct)
+				duplicated_links_dict[(temporary_topic_struct['_key'], "T17")] = 1
+
+			# (5) Link to property published date
+			link_key = 'L' + str(link_key_val)
+			# Increment key value for next link
+			link_key_val = link_key_val + 1
+
+			value = ''
+			if month_published != '' and year_published != '':
+				value = month_published + '-' + year_published
+			elif month_published == '' and year_published != '':
+				value = year_published
+			elif month_published != '' and year_published == '':
+				value = month_published
+
+			# Output link to JSON format
+			link_json_struct = {}
+			link_json_struct['_key'] = link_key
+			link_json_struct['_type'] = 'has'
+			link_json_struct['name'] = ''
+			link_json_struct['definition'] = ''
+			link_json_struct['_from'] = temporary_topic_struct['_key'] 
+			link_json_struct['_to'] = "T18"
+			link_json_struct['value'] = value
+			if (duplicated_links_dict.get((temporary_topic_struct['_key'], "T18")) == None):
+				journal_links.append(link_json_struct)
+				duplicated_links_dict[(temporary_topic_struct['_key'], "T18")] = 1
+		return journal_topics, journal_links, topic_key_val, link_key_val
+
+class Convert_Articles():
+	def __init__(self):
+		print("Protocol E")
+	# Protocol E main function to run
+	def convert_articles(self, data, topic_key_val, link_key_val, researcher_topics, publication_topics, journal_topics, journal_links):
+		article_topics = list()
+		article_links = list()
+
+		# For later use, I will convert all the researcher names to a dict mapping name to key
+		researchers_name_to_key = dict()
+		for topic in researcher_topics:
+			researchers_name_to_key[topic['title']] = topic['_key']
+
+		for rowidx in range(len(data)):
+			# Get current row in dataset
+			publication_row = data.iloc[rowidx,:]
+
+			topic_title = publication_row['TI']
+			terms = [topic_title]
+			definition = publication_row['AB']
+			acknowledgement = publication_row['FX']
+			b_page = str(publication_row['BP'])
+			e_page = str(publication_row['EP'])
+			doi = str(publication_row['DI'])
+			articleID = publication_row['AR']
+			woSID = publication_row['UT']
+			pubMedID = publication_row['PM']
+			date_downloaded = publication_row['DA']
+			grants = publication_row['FU']
+			cited_reference = [x.strip() for x in publication_row['CR'].split(';')]
+
+			# Look for duplicates
+			duplicate = False
+			for topic in article_topics:
+				if topic['title'] == topic_title:
+					topic['sources'] = topic['sources'] + ', row ' + str(rowidx + 2)
+					duplicate = True
+			# Skip making a topic for this article. There is one duplicate, so to simplify the logic, we will just say that line in the dataset does not provide any additional information
+			if (duplicate):
+				continue
+
+			# Find corresponding created topic in journal_topics
+			my_row = "row " + str(rowidx + 2) + ','
+			my_row2 = "row " + str(rowidx + 2)
+			temporary_journal_topic_struct = {}
+			for topic in journal_topics:
+				if my_row in topic['sources'] or topic['sources'].endswith(my_row2):
+					temporary_journal_topic_struct = topic
+					break
+
+			# Find corresponding created topic in publication_topics
+			temporary_publication_topic_struct = {}
+			for topic in publication_topics:
+				if my_row in topic['sources'] or topic['sources'].endswith(my_row2):
+					temporary_publication_topic_struct = topic
+					break
+			# Inherit certain properties from this topic
+			journal_key = temporary_journal_topic_struct['_key']
+			issn = temporary_journal_topic_struct['ISSN']
+			electronic_issn = temporary_journal_topic_struct['Electronic_ISSN']
+			isbn = temporary_journal_topic_struct['ISBN']
+			month_published = temporary_journal_topic_struct['month published']
+			year_published = temporary_journal_topic_struct['year published']
+			volume = temporary_journal_topic_struct['volume']
+			issue = temporary_journal_topic_struct['issue']
+			part = temporary_journal_topic_struct['part']
+			journal = temporary_publication_topic_struct['title']
+
+			topic_key = 'T' + str(topic_key_val)
+			# Increment key value for next topic
+			topic_key_val = topic_key_val + 1
+
+			# Output topic to JSON format
+			topic_json_struct = {}
+			topic_json_struct['_key'] = topic_key
+			topic_json_struct["_type"] = "publication"
+			topic_json_struct['title'] = topic_title
+			topic_json_struct['terms'] = terms
+			topic_json_struct['definition'] = definition
+			topic_json_struct['sources'] = "Web of Science, row " + str(rowidx + 2)
+			topic_json_struct['ISSN'] = issn
+			topic_json_struct['Electronic_ISSN'] = electronic_issn
+			topic_json_struct['ISBN'] = isbn
+			topic_json_struct['month published'] = month_published
+			topic_json_struct['year published'] = year_published
+			topic_json_struct['volume'] = volume
+			topic_json_struct['issue'] = issue
+			topic_json_struct['part'] = part
+			topic_json_struct['acknowledgement'] = acknowledgement
+			topic_json_struct['beginning page'] = b_page
+			topic_json_struct['ending page'] = e_page
+			topic_json_struct['DOI'] = doi
+			topic_json_struct['ArticleID'] = articleID
+			topic_json_struct['WoSID'] = woSID
+			topic_json_struct['PubMedID'] = pubMedID
+			topic_json_struct['date downloaded'] = date_downloaded
+			topic_json_struct['grants'] = grants
+			topic_json_struct['cited reference'] = cited_reference
+			topic_json_struct['journal'] = journal
+
+			# Store in list to output at end
+			article_topics.append(topic_json_struct)
+
+			# (1) Create links between cluster - topic
+			link_key = 'L' + str(link_key_val)
+			# Increment key value for next link
+			link_key_val = link_key_val + 1
+			# Output link to JSON format
+			link_json_struct = {}
+			link_json_struct['_key'] = link_key
+			link_json_struct['_type'] = 'hasInstance'
+			link_json_struct['name'] = ''
+			link_json_struct['definition'] = ''
+			link_json_struct['_from'] = 'T13'
+			link_json_struct['_to'] = topic_key
+			# Store in list to output at end
+			article_links.append(link_json_struct)
+
+			# (2) Create link between journal instances and article
+			link_key = 'L' + str(link_key_val)
+			# Increment key value for next link
+			link_key_val = link_key_val + 1
+			# Output link to JSON format
+			link_json_struct = {}
+			link_json_struct['_key'] = link_key
+			link_json_struct['_type'] = 'link'
+			link_json_struct['name'] = 'contains_01'
+			link_json_struct['definition'] = ''
+			link_json_struct['_from'] = journal_key
+			link_json_struct['_to'] = topic_key
+			# Store in list to output at end
+			article_links.append(link_json_struct)
+			# (3) Create links between researcher and article
+			authors = publication_row['AF'].split(";")
+			# Determine who reprint author is
+			reprint = publication_row['RP']
+			loc = reprint.find('(reprint author)') + 18
+			flipped_name = reprint[:loc - 19]
+			reprint_last_name = flipped_name[:flipped_name.find(',')].title()
+
+			researcher_key = None
+			for author in authors:
+				# Check for incorrectly formatted name - very rare, but has to be done
+				if (author.find(',') == -1):
+					# Skip if no comma
+					continue
+				first, last = parse_author(author)
+				researcher_key = researchers_name_to_key.get(form_author_name(first, last))
+				# This is possible and is due to different spellings of the name. 
+				if researcher_key == None:
+					pass
+				else:
+					link_key = 'L' + str(link_key_val)
+					# Increment key value for next link
+					link_key_val = link_key_val + 1
+					# Output link to JSON format
+					link_json_struct = {}
+					link_json_struct['_key'] = link_key
+					link_json_struct['_type'] = 'link'
+					link_json_struct['name'] = 'authors'
+					link_json_struct['definition'] = ''
+					link_json_struct['_from'] =  researcher_key
+					link_json_struct['_to'] = topic_key
+					# Add to list
+					article_links.append(link_json_struct)
+
+					# Reprint author link
+					if reprint_last_name == last:
+						link_key = 'L' + str(link_key_val)
+						# Increment key value for next link
+						link_key_val = link_key_val + 1
+						# Output link to JSON format
+						link_json_struct = {}
+						link_json_struct['_key'] = link_key
+						link_json_struct['_type'] = 'link'
+						link_json_struct['name'] = 'reprint'
+						link_json_struct['definition'] = ''
+						link_json_struct['_from'] =  researcher_key
+						link_json_struct['_to'] = topic_key
+						# Add to list
+						article_links.append(link_json_struct)
+
+			# (5) Link to download date
+			link_key = 'L' + str(link_key_val)
+			# Increment key value for next link
+			link_key_val = link_key_val + 1
+			# Output link to JSON format
+			link_json_struct = {}
+			link_json_struct['_key'] = link_key
+			link_json_struct['_type'] = 'has'
+			link_json_struct['name'] = ''
+			link_json_struct['definition'] = ''
+			link_json_struct['_from'] = topic_key
+			link_json_struct['_to'] = 'T15'
+			link_json_struct['value'] = date_downloaded
+			# Store in list to output at end
+			article_links.append(link_json_struct)
+
+			# (4, 6, 7) Link to property access type, language, published date,
+			# First find the corresponding journal from this journal instance
+			j_key = ''
+			for link in journal_links:
+				if link['_to'] == journal_key:
+					j_key = link['_from']
+
+			# Now get the values for the specific properties using the original journal's key
+			access_types = []
+			language = ''
+			published_date = ''
+			for link in journal_links:
+				if link['_from'] == j_key and j_key != journal_key:
+					if link['_to'] == 'T14':
+						access_types.append(link['value'])
+					elif link['_to'] == 'T17':
+						language = link['value']
+					elif link['_to'] == 'T18':
+						published_date = link['value']
+
+			# Link for each access type
+			for access_type in access_types:
+				link_key = 'L' + str(link_key_val)
+				# Increment key value for next link
+				link_key_val = link_key_val + 1
+				# Output link to JSON format
+				link_json_struct = {}
+				link_json_struct['_key'] = link_key
+				link_json_struct['_type'] = 'has'
+				link_json_struct['name'] = ''
+				link_json_struct['definition'] = ''
+				link_json_struct['_from'] = topic_key
+				link_json_struct['_to'] = 'T14'
+				link_json_struct['value'] = access_type
+				# Store in list to output at end
+				article_links.append(link_json_struct)
+			# (6) Link for language
+			link_key = 'L' + str(link_key_val)
+			# Increment key value for next link
+			link_key_val = link_key_val + 1
+			# Output link to JSON format
+			link_json_struct = {}
+			link_json_struct['_key'] = link_key
+			link_json_struct['_type'] = 'has'
+			link_json_struct['name'] = ''
+			link_json_struct['definition'] = ''
+			link_json_struct['_from'] = topic_key
+			link_json_struct['_to'] = 'T17'
+			link_json_struct['value'] = language
+			# Store in list to output at end
+			article_links.append(link_json_struct)		
+
+			# (7) Link to published date
+			link_key = 'L' + str(link_key_val)
+			# Increment key value for next link
+			link_key_val = link_key_val + 1
+			# Output link to JSON format
+			link_json_struct = {}
+			link_json_struct['_key'] = link_key
+			link_json_struct['_type'] = 'has'
+			link_json_struct['name'] = ''
+			link_json_struct['definition'] = ''
+			link_json_struct['_from'] = topic_key
+			link_json_struct['_to'] = 'T18'
+			link_json_struct['value'] = published_date
+			# Store in list to output at end
+			article_links.append(link_json_struct)
+
+			# (8) Link to property document type
+			doc_types = []
+			# There are multiple document types
+			if publication_row['DT'].find(';') != -1:
+				doc_types = publication_row['DT'].split(';')
+			else:
+				doc_types = [publication_row['DT']]
+			for doc_type in doc_types:
+				doc_type = doc_type.strip()
+
+				link_key = 'L' + str(link_key_val)
+				# Increment key value for next link
+				link_key_val = link_key_val + 1
+				# Output link to JSON format
+				link_json_struct = {}
+				link_json_struct['_key'] = link_key
+				link_json_struct['_type'] = 'has'
+				link_json_struct['name'] = ''
+				link_json_struct['definition'] = ''
+				link_json_struct['_from'] = topic_key
+				link_json_struct['_to'] = 'T19'
+				link_json_struct['value'] = doc_type
+				# Store in list to output at end
+				article_links.append(link_json_struct)
+
+		return article_topics, article_links, topic_key_val, link_key_val
+
+def convert_investigations(data, topic_key_val, link_key_val, subcategory_topics, article_topics):
 	investigation_topics = list()
 	investigation_links = list()
+
+	# Preprocess by mapping article DOI to article key
+	article_topic_doi_to_key = dict()
+	for article_topic_json in article_topics:
+		article_topic_doi_to_key[article_topic_json['DOI']] = article_topic_json["_key"]
+
 	for rowidx in range(len(data)):
 		# Get current row in dataset
 		investigation_row = data.iloc[rowidx,:]
@@ -1117,6 +1851,24 @@ def convert_investigations(data, topic_key_val, link_key_val, subcategory_topics
 		# Store in list to output at end
 		investigation_links.append(link_json_struct)
 
+		# (21) Link between investigation ID and article ID
+		for i in range(1, 46):
+			doi = investigation_row['DOI' + str(i)]
+			if (doi == ''): break
+			article_key = article_topic_doi_to_key.get(doi)
+			if (article_key != None):
+				link_key = 'L' + str(link_key_val)
+				# Increment key value for next link
+				link_key_val = link_key_val + 1
+
+				link_json_struct = {}
+				link_json_struct['_key'] = link_key
+				link_json_struct['_type'] = 'link'
+				link_json_struct['name'] = 'outputs'
+				link_json_struct['_from'] = topic_key 
+				link_json_struct['_to'] = article_key
+				investigation_links.append(link_json_struct)
+			
 	return investigation_topics, investigation_links, topic_key_val, link_key_val
 
 def convert_sponsoring_space_agencies(data, topic_key_val, link_key_val, investigation_topics):
@@ -1283,12 +2035,22 @@ def convert_sponsoring_space_organizations(data, topic_key_val, link_key_val, in
 def convert_principal_investigators(data, topic_key_val, link_key_val, investigation_topics):
 	principal_investigator_topics = list()
 	principal_investigator_links = list()
+
+	# This dict will tell us if links are already going to be created. Keyed by (from, to), value doesn't matter
+	duplicated_links_dict = dict()
+
 	for rowidx in range(len(data)):
 		# Get current row in dataset
 		investigation_row = data.iloc[rowidx,:]
-		pis_in_row = [(investigation_row['PI1-FN'], investigation_row['PI1-LN']), (investigation_row['PI2-FN'], investigation_row['PI2-LN']), (investigation_row['PI3-FN'], investigation_row['PI3-LN']), (investigation_row['PI4-FN'], investigation_row['PI4-LN']), (investigation_row['PI5-FN'], investigation_row['PI5-LN']), (investigation_row['PI6-FN'], investigation_row['PI6-LN']), (investigation_row['PI7-FN'], investigation_row['PI7-LN'])]
+		pis_in_row = [(investigation_row['PI1-FN'], investigation_row['PI1-LN'], investigation_row['PI1-City'], investigation_row['PI1-State'], investigation_row['PI1-Country']),
+		 			  (investigation_row['PI2-FN'], investigation_row['PI2-LN'], investigation_row['PI2-City'], investigation_row['PI2-State'], investigation_row['PI2-Country']),
+		 			  (investigation_row['PI3-FN'], investigation_row['PI3-LN'], investigation_row['PI3-City'], investigation_row['PI3-State'], investigation_row['PI3-Country']),
+		 			  (investigation_row['PI4-FN'], investigation_row['PI4-LN'], investigation_row['PI4-City'], investigation_row['PI4-State'], investigation_row['PI4-Country']),
+		 			  (investigation_row['PI5-FN'], investigation_row['PI5-LN'], investigation_row['PI5-City'], investigation_row['PI5-State'], investigation_row['PI5-Country']),
+		 			  (investigation_row['PI6-FN'], investigation_row['PI6-LN'], investigation_row['PI6-City'], investigation_row['PI6-State'], investigation_row['PI6-Country']),
+		 			  (investigation_row['PI7-FN'], investigation_row['PI7-LN'], investigation_row['PI7-City'], investigation_row['PI7-State'], investigation_row['PI7-Country'])]
 		for idx, pi in enumerate(pis_in_row):
-			if(pi[0] == '' or pi[1] == ''):
+			if(pi[0] == '' or pi[1] == ''): # No info for name, just skip this entry
 				continue
 			if(',' in pi[0]):
 				name = pi[0][:pi[0].find(',')]
@@ -1303,20 +2065,20 @@ def convert_principal_investigators(data, topic_key_val, link_key_val, investiga
 			# (9) Create topic for this PI if doesn't already exist
 			# Look for duplicates
 			duplicate = False
-			topic_key = None
+			investigator_topic_key = None
 			for topic in principal_investigator_topics:
 				if topic['title'] == topic_title:
 					duplicate = True
 					topic['sources'] = topic['sources'] + ', row ' + str(rowidx + 2)
-					topic_key = topic['_key']
+					investigator_topic_key = topic['_key']
 			# Make a new topic if not duplicate
 			if (not duplicate):
 
-				topic_key = 'T' + str(topic_key_val)
+				investigator_topic_key = 'T' + str(topic_key_val)
 				# Increment key value for next topic
 				topic_key_val = topic_key_val + 1
 				topic_json_struct = {}
-				topic_json_struct['_key'] = topic_key
+				topic_json_struct['_key'] = investigator_topic_key
 				topic_json_struct["_type"] = 'individual'
 				topic_json_struct['title'] = first_name + " " + last_name
 				topic_json_struct['firstName'] = first_name 
@@ -1337,7 +2099,7 @@ def convert_principal_investigators(data, topic_key_val, link_key_val, investiga
 				link_json_struct['_type'] = 'hasInstance'
 				link_json_struct['name'] = ''
 				link_json_struct['_from'] = 'T31' 
-				link_json_struct['_to'] = topic_key
+				link_json_struct['_to'] = investigator_topic_key
 
 				principal_investigator_links.append(link_json_struct)
 			# (11) Link between PI and investigation ID
@@ -1378,13 +2140,205 @@ def convert_principal_investigators(data, topic_key_val, link_key_val, investiga
 			link_json_struct['_type'] = 'link'
 			link_json_struct['name'] = 'leads'
 			link_json_struct['definition'] = definition
-			link_json_struct['_from'] = topic_key 
+			link_json_struct['_from'] = investigator_topic_key 
 			link_json_struct['_to'] = investigation_key
 
 			# Store in list to output at end
 			principal_investigator_links.append(link_json_struct)
 
+			# (12) Create topic for city if not duplicate
+			topic_title = pi[2]
+			if (topic_title != ''):
+				duplicate = False
+				city_topic_key = None
+				for topic in principal_investigator_topics:
+					if topic['title'] == topic_title:
+						duplicate = True
+						if (', row ' + str(rowidx + 2) not in topic['sources']):
+							topic['sources'] = topic['sources'] + ', row ' + str(rowidx + 2)
+						city_topic_key = topic['_key']
+				# Make a new topic if not duplicate
+				if (not duplicate):
+					city_topic_key = 'T' + str(topic_key_val)
+					# Increment key value for next topic
+					topic_key_val = topic_key_val + 1
+					topic_json_struct = {}
+					topic_json_struct['_key'] = city_topic_key
+					topic_json_struct["_type"] = 'topic'
+					topic_json_struct['title'] = topic_title
+					topic_json_struct['terms'] = [topic_title]
+					topic_json_struct['sources'] = "Investigations, row " + str(rowidx + 2)
+
+					principal_investigator_topics.append(topic_json_struct)
+
+					# (13) Link PI city to cluster T32
+					link_key = 'L' + str(link_key_val)
+					# Increment key value for next link
+					link_key_val = link_key_val + 1
+
+					link_json_struct = {}
+					link_json_struct['_key'] = link_key
+					link_json_struct['_type'] = 'hasInstance'
+					link_json_struct['name'] = ''
+					link_json_struct['_from'] = 'T32' 
+					link_json_struct['_to'] = city_topic_key
+
+					principal_investigator_links.append(link_json_struct)
+
+				# (14) Link PI to city if link doesn't already exist
+				if (duplicated_links_dict.get((investigator_topic_key, city_topic_key)) == None):
+					link_key = 'L' + str(link_key_val)
+					# Increment key value for next link
+					link_key_val = link_key_val + 1
+
+					link_json_struct = {}
+					link_json_struct['_key'] = link_key
+					link_json_struct['_type'] = 'link'
+					link_json_struct['name'] = 'is located in'
+					link_json_struct['_from'] = investigator_topic_key
+					link_json_struct['_to'] = city_topic_key
+
+					principal_investigator_links.append(link_json_struct)
+					duplicated_links_dict[(investigator_topic_key, city_topic_key)] = 1
+
+			# (15) Create topic for state if not duplicate
+			topic_title = pi[3]
+			if (topic_title != ""):
+				duplicate = False
+				state_topic_key = None
+				for topic in principal_investigator_topics:
+					if topic['title'] == topic_title:
+						duplicate = True
+						if (', row ' + str(rowidx + 2) not in topic['sources']):
+							topic['sources'] = topic['sources'] + ', row ' + str(rowidx + 2)
+						state_topic_key = topic['_key']
+				# Make a new topic if not duplicate
+				if (not duplicate):
+					state_topic_key = 'T' + str(topic_key_val)
+					# Increment key value for next topic
+					topic_key_val = topic_key_val + 1
+					topic_json_struct = {}
+					topic_json_struct['_key'] = state_topic_key
+					topic_json_struct["_type"] = 'topic'
+					topic_json_struct['title'] = topic_title
+					topic_json_struct['terms'] = [topic_title]
+					topic_json_struct['sources'] = "Investigations, row " + str(rowidx + 2)
+
+					principal_investigator_topics.append(topic_json_struct)
+
+					# (16) Link PI state to cluster T33
+					link_key = 'L' + str(link_key_val)
+					# Increment key value for next link
+					link_key_val = link_key_val + 1
+
+					link_json_struct = {}
+					link_json_struct['_key'] = link_key
+					link_json_struct['_type'] = 'hasInstance'
+					link_json_struct['name'] = ''
+					link_json_struct['_from'] = 'T33' 
+					link_json_struct['_to'] = state_topic_key
+
+					principal_investigator_links.append(link_json_struct)
+
+				# (17) Link city to state if link doesn't already exist
+				if (duplicated_links_dict.get((city_topic_key, state_topic_key)) == None):
+					link_key = 'L' + str(link_key_val)
+					# Increment key value for next link
+					link_key_val = link_key_val + 1
+
+					link_json_struct = {}
+					link_json_struct['_key'] = link_key
+					link_json_struct['_type'] = 'link'
+					link_json_struct['name'] = 'is located in'
+					link_json_struct['_from'] = city_topic_key
+					link_json_struct['_to'] = state_topic_key
+
+					principal_investigator_links.append(link_json_struct)
+					duplicated_links_dict[(city_topic_key, state_topic_key)] = 1
+			# (18) Create topic for country if not duplicate
+			topic_title = pi[4]
+			if (topic_title != ""):
+				duplicate = False
+				country_topic_key = None
+				for topic in principal_investigator_topics:
+					if topic['title'] == topic_title:
+						duplicate = True
+						if (', row ' + str(rowidx + 2) not in topic['sources']):
+							topic['sources'] = topic['sources'] + ', row ' + str(rowidx + 2)
+						country_topic_key = topic['_key']
+				# Make a new topic if not duplicate
+				if (not duplicate):
+					country_topic_key = 'T' + str(topic_key_val)
+					# Increment key value for next topic
+					topic_key_val = topic_key_val + 1
+					topic_json_struct = {}
+					topic_json_struct['_key'] = country_topic_key
+					topic_json_struct["_type"] = 'topic'
+					topic_json_struct['title'] = topic_title
+					topic_json_struct['terms'] = [topic_title]
+					topic_json_struct['sources'] = "Investigations, row " + str(rowidx + 2)
+
+					principal_investigator_topics.append(topic_json_struct)
+
+					# (19) Link PI country to cluster T34
+					link_key = 'L' + str(link_key_val)
+					# Increment key value for next link
+					link_key_val = link_key_val + 1
+
+					link_json_struct = {}
+					link_json_struct['_key'] = link_key
+					link_json_struct['_type'] = 'hasInstance'
+					link_json_struct['name'] = ''
+					link_json_struct['_from'] = 'T34' 
+					link_json_struct['_to'] = country_topic_key
+
+					principal_investigator_links.append(link_json_struct)
+				if (pi[3] == ''):
+					key_to_use = city_topic_key
+				else:
+					key_to_use = state_topic_key
+				# (20) Link city/state to country if link doesn't already exist
+				if (duplicated_links_dict.get((key_to_use, country_topic_key)) == None):
+					link_key = 'L' + str(link_key_val)
+					# Increment key value for next link
+					link_key_val = link_key_val + 1
+
+					link_json_struct = {}
+					link_json_struct['_key'] = link_key
+					link_json_struct['_type'] = 'link'
+					link_json_struct['name'] = 'is located in'
+					link_json_struct['_from'] = key_to_use
+					link_json_struct['_to'] = country_topic_key
+
+					principal_investigator_links.append(link_json_struct)
+					duplicated_links_dict[(key_to_use, country_topic_key)] = 1
+			
 	return principal_investigator_topics, principal_investigator_links, topic_key_val, link_key_val
+
+# General helper function
+def add_new_topics(old_topics, new_topics):
+	for topic in new_topics:
+		old_topics.append(topic)
+	return old_topics
+
+# General helper function
+def add_new_links(old_links, new_links):
+	for link in new_links:
+		old_links.append(link)
+	return old_links
+
+# General helper function
+def parse_author(author):
+	# The form is LastName, FirstName or LastName, FirstName Middle
+	# The middle name will remain part of the first name
+	author = author.strip()
+	last_name = author.split(',')[0].strip().title()
+	first_name = author.split(",")[1].strip().title()
+	return first_name, last_name
+
+# General helper function
+def form_author_name(first_name, last_name):
+	return first_name + " " + last_name
 
 def main():
 	# Create list of topics
@@ -1392,21 +2346,51 @@ def main():
 	new_links = list()
 
 	# Load and clean the data
-	data = pd.read_csv("iss_data.csv")
-	data = data.fillna('')
+	iss_data = pd.read_csv("iss_data.csv")
+	iss_data = iss_data.fillna('')
+
+	wos_data = pd.concat([pd.read_csv("wos_data.csv"), pd.read_csv('wos_data2.csv')])
+	wos_data = wos_data.fillna('')
+	wos_data.drop_duplicates('DI')
 
 	subcategory_topics, subcategory_links, topic_key_val, link_key_val = convert_clusters()
-	# Step 1 - 3, 8
-	investigation_topics, investigation_links, topic_key_val, link_key_val = convert_investigations(data, topic_key_val, link_key_val, subcategory_topics)
+	print("Converting researchers")
+	researcher_runner = Convert_Researchers()
+	researcher_topics, researcher_links, topic_key_val, link_key_val = 	researcher_runner.convert_researchers(wos_data, topic_key_val, link_key_val)
+	# new_topics = add_new_topics(new_topics, researcher_topics)
+	# new_links = add_new_links(new_links, researcher_links)
+
+	print("Converting publications")
+	publication_runner = Convert_Publications()
+	publication_topics, publication_links, topic_key_val, link_key_val = publication_runner.convert_publications(wos_data, topic_key_val, link_key_val)
+	# new_topics = add_new_topics(new_topics, publication_topics)
+	# new_links = add_new_links(new_links, publication_links)
+
+	print("Converting journals")
+	journal_runner = Convert_Journals()
+	journal_topics, journal_links, topic_key_val, link_key_val = journal_runner.convert_journals(wos_data, topic_key_val, link_key_val, publication_topics)
+	# new_topics = add_new_topics(new_topics, journal_topics)
+	# new_links = add_new_links(new_links, journal_links)
+
+	print("Converting articles")
+	article_runner = Convert_Articles()
+	article_topics, article_links, topic_key_val, link_key_val = article_runner.convert_articles(wos_data, topic_key_val, link_key_val, researcher_topics, publication_topics, journal_topics, journal_links)
+	# new_topics = add_new_topics(new_topics, article_topics)
+	# new_links = add_new_links(new_links, article_links)
+	print("Running ISS")
+
+	# ---- ISS ----
+	# Step 1 - 3, 8, 21
+	investigation_topics, investigation_links, topic_key_val, link_key_val = convert_investigations(iss_data, topic_key_val, link_key_val, subcategory_topics, article_topics)
 	# Step 4
-	sponsoring_space_agency_topics, sponsoring_space_agency_links, topic_key_val, link_key_val = convert_sponsoring_space_agencies(data, topic_key_val, link_key_val, investigation_topics)
+	sponsoring_space_agency_topics, sponsoring_space_agency_links, topic_key_val, link_key_val = convert_sponsoring_space_agencies(iss_data, topic_key_val, link_key_val, investigation_topics)
 	# Step 5 - 7
-	sponsoring_space_organization_topics, sponsoring_space_organization_links, topic_key_val, link_key_val = convert_sponsoring_space_organizations(data, topic_key_val, link_key_val, investigation_topics)
+	sponsoring_space_organization_topics, sponsoring_space_organization_links, topic_key_val, link_key_val = convert_sponsoring_space_organizations(iss_data, topic_key_val, link_key_val, investigation_topics)
+	# Step 9 - 20
+	principal_investigator_topics, principal_investigator_links, topic_key_val, link_key_val = convert_principal_investigators(iss_data, topic_key_val, link_key_val, investigation_topics)
 
-	principal_investigator_topics, principal_investigator_links, topic_key_val, link_key_val = convert_principal_investigators(data, topic_key_val, link_key_val, investigation_topics)
-
-	new_topics = subcategory_topics + investigation_topics + sponsoring_space_agency_topics + sponsoring_space_organization_topics + principal_investigator_topics
-	new_links = subcategory_links + investigation_links + sponsoring_space_agency_links + sponsoring_space_organization_links + principal_investigator_links
+	new_topics = investigation_topics + sponsoring_space_agency_topics + sponsoring_space_organization_topics + principal_investigator_topics
+	new_links = investigation_links + sponsoring_space_agency_links + sponsoring_space_organization_links + principal_investigator_links
 
 	# Output topics to file
 	with open('output/iss_topics.json', 'w') as f:

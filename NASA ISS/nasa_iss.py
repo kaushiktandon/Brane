@@ -2181,6 +2181,577 @@ class Convert_Organizations():
 		organization_topics = self.post_process_organizations(organization_topics)
 		return organization_topics, organization_links, topic_key_val, link_key_val
 
+class Convert_Investigations():
+	def __init__(self):
+		print("ISS - Convert Investigations")
+	def convert_investigations(self, data, topic_key_val, link_key_val, subcategory_topics, article_topics):
+		investigation_topics = list()
+		investigation_links = list()
+
+		# Preprocess by mapping article DOI to article key
+		article_topic_doi_to_key = dict()
+		for article_topic_json in article_topics:
+			article_topic_doi_to_key[article_topic_json['DOI']] = article_topic_json["_key"]
+
+		for rowidx in range(len(data)):
+			# Get current row in dataset
+			investigation_row = data.iloc[rowidx,:]
+			_type = "topic"
+			topic_title = investigation_row['Name']
+			definition = topic_title + " - PAO Summary"
+			terms = [topic_title, "PAO Summary"]
+			pst_id = investigation_row['PST ID']
+			# Look for duplicates
+			duplicate = False
+			for topic in investigation_topics:
+				if topic['title'] == topic_title:
+					duplicate = True
+			# Skip making a topic for this publication
+			if (duplicate):
+				continue
+
+			topic_key = 'T' + str(topic_key_val)
+			# Increment key value for next topic
+			topic_key_val = topic_key_val + 1
+
+			# (1) Output investigation topic to JSON format
+			topic_json_struct = {}
+			topic_json_struct['_key'] = topic_key
+			topic_json_struct["_type"] = _type
+			topic_json_struct['title'] = topic_title
+			topic_json_struct['definition'] = definition
+			topic_json_struct['terms'] = terms
+			topic_json_struct['PST ID'] = str(pst_id)
+			topic_json_struct['sources'] = "Investigations, row " + str(rowidx + 2)
+
+			# Store in list to output at end
+			investigation_topics.append(topic_json_struct)
+
+			link_key = 'L' + str(link_key_val)
+			# Increment key value for next link
+			link_key_val = link_key_val + 1
+
+			# (2) Output link to JSON format between investigation and T27
+			link_json_struct = {}
+			link_json_struct['_key'] = link_key
+			link_json_struct['_type'] = 'hasInstance'
+			link_json_struct['name'] = ''
+			link_json_struct['_from'] = 'T27' 
+			link_json_struct['_to'] = topic_key
+
+			# Store in list to output at end
+			investigation_links.append(link_json_struct)
+
+			# (3) Link between subcategory and investigation ID
+			found = False
+			subcategory_id = -1
+			for subcategory_topic_json in subcategory_topics:
+				if subcategory_topic_json['title'] == investigation_row['Subcategory']:
+					found = True
+					subcategory_id = subcategory_topic_json['_key']
+			if found:
+				link_key = 'L' + str(link_key_val)
+				# Increment key value for next link
+				link_key_val = link_key_val + 1
+
+				link_json_struct = {}
+				link_json_struct['_key'] = link_key
+				link_json_struct['_type'] = 'categorizes'
+				link_json_struct['name'] = ''
+				link_json_struct['_from'] = subcategory_id 
+				link_json_struct['_to'] = topic_key
+
+				# Store in list to output at end
+				investigation_links.append(link_json_struct)
+
+			# (8) Link between Operations and investigation ID
+			link_key = 'L' + str(link_key_val)
+			# Increment key value for next link
+			link_key_val = link_key_val + 1
+
+			link_json_struct = {}
+			link_json_struct['_key'] = link_key
+			link_json_struct['_type'] = 'has'
+			link_json_struct['name'] = ''
+			link_json_struct['_from'] = topic_key 
+			link_json_struct['_to'] = 'T35'
+			link_json_struct['value'] = investigation_row['OperationsLocation']
+
+			# Store in list to output at end
+			investigation_links.append(link_json_struct)
+
+			# (21) Link between investigation ID and article ID
+			for i in range(1, 46):
+				doi = investigation_row['DOI' + str(i)]
+				if (doi == ''): break
+				article_key = article_topic_doi_to_key.get(doi)
+				if (article_key != None):
+					link_key = 'L' + str(link_key_val)
+					# Increment key value for next link
+					link_key_val = link_key_val + 1
+
+					link_json_struct = {}
+					link_json_struct['_key'] = link_key
+					link_json_struct['_type'] = 'link'
+					link_json_struct['name'] = 'outputs'
+					link_json_struct['_from'] = topic_key 
+					link_json_struct['_to'] = article_key
+					investigation_links.append(link_json_struct)
+				
+		return investigation_topics, investigation_links, topic_key_val, link_key_val
+class Convert_Sponsoring_Space_Agencies():
+	def __init__(self):
+		print("ISS - Convert Sponsoring Space Agencies")
+	def convert_sponsoring_space_agencies(self, data, topic_key_val, link_key_val, investigation_topics):
+		sponsoring_space_agency_topics = list()
+		sponsoring_space_agency_links = list()
+		for rowidx in range(len(data)):
+			# Get current row in dataset
+			agency_row = data.iloc[rowidx,:]
+			topic_title = agency_row['SponsoringSpaceAgency']
+			abrev = topic_title[topic_title.find('(') + 1 : topic_title.find(')')]
+			terms = [topic_title, abrev]		
+			# Look for duplicates
+			duplicate = False
+			topic_key = None
+			for topic in sponsoring_space_agency_topics:
+				if topic['title'] == topic_title:
+					duplicate = True
+					topic['sources'] = topic['sources'] + ', row ' + str(rowidx + 2)
+					topic_key = topic['_key']
+			# Make a new topic if not duplicate
+			if (not duplicate):
+
+				topic_key = 'T' + str(topic_key_val)
+				# Increment key value for next topic
+				topic_key_val = topic_key_val + 1
+
+				# (4a) Create topic for sponsoring agency
+				topic_json_struct = {}
+				topic_json_struct['_key'] = topic_key
+				topic_json_struct["_type"] = 'topic'
+				topic_json_struct['title'] = topic_title
+				topic_json_struct['definition'] = ''
+				topic_json_struct['terms'] = terms
+				topic_json_struct['sources'] = "Investigations, row " + str(rowidx + 2)
+
+				sponsoring_space_agency_topics.append(topic_json_struct)
+
+				# (4b) Link sponsoring agency to cluster T29
+				link_key = 'L' + str(link_key_val)
+				# Increment key value for next link
+				link_key_val = link_key_val + 1
+
+				link_json_struct = {}
+				link_json_struct['_key'] = link_key
+				link_json_struct['_type'] = 'hasInstance'
+				link_json_struct['name'] = ''
+				link_json_struct['_from'] = 'T29' 
+				link_json_struct['_to'] = topic_key
+
+				sponsoring_space_agency_links.append(link_json_struct)
+
+			# (4c) Link between SponsoringSpaceAgency and investigation ID
+			# Find corresponding topic in investigation_topics
+			my_row = "row " + str(rowidx + 2) + ','
+			my_row2 = "row " + str(rowidx + 2)
+			temporary_topic_struct = {}
+			for topic in investigation_topics:
+				if my_row in topic['sources'] or topic['sources'].endswith(my_row2):
+					temporary_topic_struct = topic
+					break
+			investigation_key = temporary_topic_struct['_key']
+
+			link_key = 'L' + str(link_key_val)
+			# Increment key value for next link
+			link_key_val = link_key_val + 1
+
+			# Output link to JSON format
+			link_json_struct = {}
+			link_json_struct['_key'] = link_key
+			link_json_struct['_type'] = 'link'
+			link_json_struct['name'] = 'sponsors'
+			link_json_struct['definition'] = ''
+			link_json_struct['_from'] = topic_key 
+			link_json_struct['_to'] = investigation_key
+
+			# Store in list to output at end
+			sponsoring_space_agency_links.append(link_json_struct)
+
+		return sponsoring_space_agency_topics, sponsoring_space_agency_links, topic_key_val, link_key_val
+
+class Convert_Sponsoring_Space_Organizations():
+	def __init__(self):
+		print("ISS - Convert Sponsoring Space Organizations")
+	def convert_sponsoring_space_organizations(self, data, topic_key_val, link_key_val, investigation_topics):
+		sponsoring_space_organization_topics = list()
+		sponsoring_space_organization_links = list()
+		for rowidx in range(len(data)):
+			# Get current row in dataset
+			agency_row = data.iloc[rowidx,:]
+			topic_title = agency_row['SponsoringOrganization']
+			abrev = topic_title[topic_title.find('(') + 1 : topic_title.find(')')]
+			terms = [topic_title, abrev]		
+			# Look for duplicates
+			duplicate = False
+			topic_key = None
+			for topic in sponsoring_space_organization_topics:
+				if topic['title'] == topic_title:
+					duplicate = True
+					topic['sources'] = topic['sources'] + ', row ' + str(rowidx + 2)
+					topic_key = topic['_key']
+			# Make a new topic if not duplicate
+			if (not duplicate):
+
+				topic_key = 'T' + str(topic_key_val)
+				# Increment key value for next topic
+				topic_key_val = topic_key_val + 1
+
+				# (5) Create topic for sponsoring organization
+				topic_json_struct = {}
+				topic_json_struct['_key'] = topic_key
+				topic_json_struct["_type"] = 'topic'
+				topic_json_struct['title'] = topic_title
+				topic_json_struct['definition'] = ''
+				topic_json_struct['terms'] = terms
+				topic_json_struct['sources'] = "Investigations, row " + str(rowidx + 2)
+
+				sponsoring_space_organization_topics.append(topic_json_struct)
+
+				# (5) Link sponsoring agency to cluster T30
+				link_key = 'L' + str(link_key_val)
+				# Increment key value for next link
+				link_key_val = link_key_val + 1
+
+				link_json_struct = {}
+				link_json_struct['_key'] = link_key
+				link_json_struct['_type'] = 'hasInstance'
+				link_json_struct['name'] = ''
+				link_json_struct['_from'] = 'T30' 
+				link_json_struct['_to'] = topic_key
+
+				sponsoring_space_organization_links.append(link_json_struct)
+
+			# (7) Link between SponsoringAgency and investigation ID
+			# Find corresponding topic in investigation_topics
+			my_row = "row " + str(rowidx + 2) + ','
+			my_row2 = "row " + str(rowidx + 2)
+			temporary_topic_struct = {}
+			for topic in investigation_topics:
+				if my_row in topic['sources'] or topic['sources'].endswith(my_row2):
+					temporary_topic_struct = topic
+					break
+			investigation_key = temporary_topic_struct['_key']
+
+			link_key = 'L' + str(link_key_val)
+			# Increment key value for next link
+			link_key_val = link_key_val + 1
+
+			# Output link to JSON format
+			link_json_struct = {}
+			link_json_struct['_key'] = link_key
+			link_json_struct['_type'] = 'link'
+			link_json_struct['name'] = 'sponsors'
+			link_json_struct['definition'] = ''
+			link_json_struct['_from'] = topic_key 
+			link_json_struct['_to'] = investigation_key
+
+			# Store in list to output at end
+			sponsoring_space_organization_links.append(link_json_struct)
+
+		# Post process to fix a broken character
+		for topic in sponsoring_space_organization_topics:
+			topic['title'] = topic['title'].replace('\u2013', '-')
+			topic['terms'][0] = topic['terms'][0].replace('\u2013', '-')
+
+		return sponsoring_space_organization_topics, sponsoring_space_organization_links, topic_key_val, link_key_val
+
+class Convert_Principal_Investigators():
+	def __init__(self):
+		print("ISS - Convert Principal Investigators")
+	def convert_principal_investigators(self, data, topic_key_val, link_key_val, investigation_topics):
+		principal_investigator_topics = list()
+		principal_investigator_links = list()
+
+		# This dict will tell us if links are already going to be created. Keyed by (from, to), value doesn't matter
+		duplicated_links_dict = dict()
+
+		for rowidx in range(len(data)):
+			# Get current row in dataset
+			investigation_row = data.iloc[rowidx,:]
+			pis_in_row = [(investigation_row['PI1-FN'], investigation_row['PI1-LN'], investigation_row['PI1-City'], investigation_row['PI1-State'], investigation_row['PI1-Country']),
+			 			  (investigation_row['PI2-FN'], investigation_row['PI2-LN'], investigation_row['PI2-City'], investigation_row['PI2-State'], investigation_row['PI2-Country']),
+			 			  (investigation_row['PI3-FN'], investigation_row['PI3-LN'], investigation_row['PI3-City'], investigation_row['PI3-State'], investigation_row['PI3-Country']),
+			 			  (investigation_row['PI4-FN'], investigation_row['PI4-LN'], investigation_row['PI4-City'], investigation_row['PI4-State'], investigation_row['PI4-Country']),
+			 			  (investigation_row['PI5-FN'], investigation_row['PI5-LN'], investigation_row['PI5-City'], investigation_row['PI5-State'], investigation_row['PI5-Country']),
+			 			  (investigation_row['PI6-FN'], investigation_row['PI6-LN'], investigation_row['PI6-City'], investigation_row['PI6-State'], investigation_row['PI6-Country']),
+			 			  (investigation_row['PI7-FN'], investigation_row['PI7-LN'], investigation_row['PI7-City'], investigation_row['PI7-State'], investigation_row['PI7-Country'])]
+			for idx, pi in enumerate(pis_in_row):
+				if(pi[0] == '' or pi[1] == ''): # No info for name, just skip this entry
+					continue
+				if(',' in pi[0]):
+					name = pi[0][:pi[0].find(',')]
+					first_name = name.split(" ")[0]
+					last_name = name.split(" ")[1]
+				else:
+					first_name = pi[0]
+					last_name = pi[1]
+				topic_title = first_name + " " + last_name
+				initials = first_name[0] + "." + last_name[0] + "."
+				terms = [topic_title, last_name, initials]
+				# (9) Create topic for this PI if doesn't already exist
+				# Look for duplicates
+				duplicate = False
+				investigator_topic_key = None
+				for topic in principal_investigator_topics:
+					if topic['title'] == topic_title:
+						duplicate = True
+						topic['sources'] = topic['sources'] + ', row ' + str(rowidx + 2)
+						investigator_topic_key = topic['_key']
+				# Make a new topic if not duplicate
+				if (not duplicate):
+
+					investigator_topic_key = 'T' + str(topic_key_val)
+					# Increment key value for next topic
+					topic_key_val = topic_key_val + 1
+					topic_json_struct = {}
+					topic_json_struct['_key'] = investigator_topic_key
+					topic_json_struct["_type"] = 'individual'
+					topic_json_struct['title'] = first_name + " " + last_name
+					topic_json_struct['firstName'] = first_name 
+					topic_json_struct['lastName'] = last_name
+					topic_json_struct['initials'] = initials
+					topic_json_struct['terms'] = terms
+					topic_json_struct['sources'] = "Investigations, row " + str(rowidx + 2)
+
+					principal_investigator_topics.append(topic_json_struct)
+
+					# (10) Link PI to cluster T31
+					link_key = 'L' + str(link_key_val)
+					# Increment key value for next link
+					link_key_val = link_key_val + 1
+
+					link_json_struct = {}
+					link_json_struct['_key'] = link_key
+					link_json_struct['_type'] = 'hasInstance'
+					link_json_struct['name'] = ''
+					link_json_struct['_from'] = 'T31' 
+					link_json_struct['_to'] = investigator_topic_key
+
+					principal_investigator_links.append(link_json_struct)
+				# (11) Link between PI and investigation ID
+				# Find corresponding topic in investigation_topics
+				my_row = "row " + str(rowidx + 2) + ','
+				my_row2 = "row " + str(rowidx + 2)
+				temporary_topic_struct = {}
+				for topic in investigation_topics:
+					if my_row in topic['sources'] or topic['sources'].endswith(my_row2):
+						temporary_topic_struct = topic
+						break
+				investigation_key = temporary_topic_struct['_key']
+
+				link_key = 'L' + str(link_key_val)
+				# Increment key value for next link
+				link_key_val = link_key_val + 1
+
+				definition = topic_title + " is the "
+				if (idx == 0):
+					definition += "first"
+				elif (idx == 1):
+					definition += "second"
+				elif (idx == 2):
+					definition += "third"
+				elif (idx == 3):
+					definition += "fourth"
+				elif (idx == 4):
+					definition += "fifth"
+				elif (idx == 5):
+					definition += "sixth"
+				elif (idx == 6):
+					definition += "seventh"
+				definition += " person responsible for " + temporary_topic_struct['title']
+
+				# Output link to JSON format
+				link_json_struct = {}
+				link_json_struct['_key'] = link_key
+				link_json_struct['_type'] = 'link'
+				link_json_struct['name'] = 'leads'
+				link_json_struct['definition'] = definition
+				link_json_struct['_from'] = investigator_topic_key 
+				link_json_struct['_to'] = investigation_key
+
+				# Store in list to output at end
+				principal_investigator_links.append(link_json_struct)
+
+				# (12) Create topic for city if not duplicate
+				topic_title = pi[2]
+				if (topic_title != ''):
+					duplicate = False
+					city_topic_key = None
+					for topic in principal_investigator_topics:
+						if topic['title'] == topic_title:
+							duplicate = True
+							if (', row ' + str(rowidx + 2) not in topic['sources']):
+								topic['sources'] = topic['sources'] + ', row ' + str(rowidx + 2)
+							city_topic_key = topic['_key']
+					# Make a new topic if not duplicate
+					if (not duplicate):
+						city_topic_key = 'T' + str(topic_key_val)
+						# Increment key value for next topic
+						topic_key_val = topic_key_val + 1
+						topic_json_struct = {}
+						topic_json_struct['_key'] = city_topic_key
+						topic_json_struct["_type"] = 'topic'
+						topic_json_struct['title'] = topic_title
+						topic_json_struct['terms'] = [topic_title]
+						topic_json_struct['sources'] = "Investigations, row " + str(rowidx + 2)
+
+						principal_investigator_topics.append(topic_json_struct)
+
+						# (13) Link PI city to cluster T32
+						link_key = 'L' + str(link_key_val)
+						# Increment key value for next link
+						link_key_val = link_key_val + 1
+
+						link_json_struct = {}
+						link_json_struct['_key'] = link_key
+						link_json_struct['_type'] = 'hasInstance'
+						link_json_struct['name'] = ''
+						link_json_struct['_from'] = 'T32' 
+						link_json_struct['_to'] = city_topic_key
+
+						principal_investigator_links.append(link_json_struct)
+
+					# (14) Link PI to city if link doesn't already exist
+					if (duplicated_links_dict.get((investigator_topic_key, city_topic_key)) == None):
+						link_key = 'L' + str(link_key_val)
+						# Increment key value for next link
+						link_key_val = link_key_val + 1
+
+						link_json_struct = {}
+						link_json_struct['_key'] = link_key
+						link_json_struct['_type'] = 'link'
+						link_json_struct['name'] = 'is located in'
+						link_json_struct['_from'] = investigator_topic_key
+						link_json_struct['_to'] = city_topic_key
+
+						principal_investigator_links.append(link_json_struct)
+						duplicated_links_dict[(investigator_topic_key, city_topic_key)] = 1
+
+				# (15) Create topic for state if not duplicate
+				topic_title = pi[3]
+				if (topic_title != ""):
+					duplicate = False
+					state_topic_key = None
+					for topic in principal_investigator_topics:
+						if topic['title'] == topic_title:
+							duplicate = True
+							if (', row ' + str(rowidx + 2) not in topic['sources']):
+								topic['sources'] = topic['sources'] + ', row ' + str(rowidx + 2)
+							state_topic_key = topic['_key']
+					# Make a new topic if not duplicate
+					if (not duplicate):
+						state_topic_key = 'T' + str(topic_key_val)
+						# Increment key value for next topic
+						topic_key_val = topic_key_val + 1
+						topic_json_struct = {}
+						topic_json_struct['_key'] = state_topic_key
+						topic_json_struct["_type"] = 'topic'
+						topic_json_struct['title'] = topic_title
+						topic_json_struct['terms'] = [topic_title]
+						topic_json_struct['sources'] = "Investigations, row " + str(rowidx + 2)
+
+						principal_investigator_topics.append(topic_json_struct)
+
+						# (16) Link PI state to cluster T33
+						link_key = 'L' + str(link_key_val)
+						# Increment key value for next link
+						link_key_val = link_key_val + 1
+
+						link_json_struct = {}
+						link_json_struct['_key'] = link_key
+						link_json_struct['_type'] = 'hasInstance'
+						link_json_struct['name'] = ''
+						link_json_struct['_from'] = 'T33' 
+						link_json_struct['_to'] = state_topic_key
+
+						principal_investigator_links.append(link_json_struct)
+
+					# (17) Link city to state if link doesn't already exist
+					if (duplicated_links_dict.get((city_topic_key, state_topic_key)) == None):
+						link_key = 'L' + str(link_key_val)
+						# Increment key value for next link
+						link_key_val = link_key_val + 1
+
+						link_json_struct = {}
+						link_json_struct['_key'] = link_key
+						link_json_struct['_type'] = 'link'
+						link_json_struct['name'] = 'is located in'
+						link_json_struct['_from'] = city_topic_key
+						link_json_struct['_to'] = state_topic_key
+
+						principal_investigator_links.append(link_json_struct)
+						duplicated_links_dict[(city_topic_key, state_topic_key)] = 1
+				# (18) Create topic for country if not duplicate
+				topic_title = pi[4]
+				if (topic_title != ""):
+					duplicate = False
+					country_topic_key = None
+					for topic in principal_investigator_topics:
+						if topic['title'] == topic_title:
+							duplicate = True
+							if (', row ' + str(rowidx + 2) not in topic['sources']):
+								topic['sources'] = topic['sources'] + ', row ' + str(rowidx + 2)
+							country_topic_key = topic['_key']
+					# Make a new topic if not duplicate
+					if (not duplicate):
+						country_topic_key = 'T' + str(topic_key_val)
+						# Increment key value for next topic
+						topic_key_val = topic_key_val + 1
+						topic_json_struct = {}
+						topic_json_struct['_key'] = country_topic_key
+						topic_json_struct["_type"] = 'topic'
+						topic_json_struct['title'] = topic_title
+						topic_json_struct['terms'] = [topic_title]
+						topic_json_struct['sources'] = "Investigations, row " + str(rowidx + 2)
+
+						principal_investigator_topics.append(topic_json_struct)
+
+						# (19) Link PI country to cluster T34
+						link_key = 'L' + str(link_key_val)
+						# Increment key value for next link
+						link_key_val = link_key_val + 1
+
+						link_json_struct = {}
+						link_json_struct['_key'] = link_key
+						link_json_struct['_type'] = 'hasInstance'
+						link_json_struct['name'] = ''
+						link_json_struct['_from'] = 'T34' 
+						link_json_struct['_to'] = country_topic_key
+
+						principal_investigator_links.append(link_json_struct)
+					if (pi[3] == ''):
+						key_to_use = city_topic_key
+					else:
+						key_to_use = state_topic_key
+					# (20) Link city/state to country if link doesn't already exist
+					if (duplicated_links_dict.get((key_to_use, country_topic_key)) == None):
+						link_key = 'L' + str(link_key_val)
+						# Increment key value for next link
+						link_key_val = link_key_val + 1
+
+						link_json_struct = {}
+						link_json_struct['_key'] = link_key
+						link_json_struct['_type'] = 'link'
+						link_json_struct['name'] = 'is located in'
+						link_json_struct['_from'] = key_to_use
+						link_json_struct['_to'] = country_topic_key
+
+						principal_investigator_links.append(link_json_struct)
+						duplicated_links_dict[(key_to_use, country_topic_key)] = 1
+				
+		return principal_investigator_topics, principal_investigator_links, topic_key_val, link_key_val
+
 # General helper function
 def add_new_topics(old_topics, new_topics):
 	for topic in new_topics:
@@ -2231,6 +2802,9 @@ def main():
 	wos_data = wos_data.fillna('')
 	wos_data.drop_duplicates('DI')
 
+	iss_data = pd.read_csv("iss_data.csv")
+	iss_data = iss_data.fillna('')
+
 	print("Creating clusters")
 	cluster_runner = Convert_Clusters()
 	cluster_topics, cluster_links, topic_key_val, link_key_val = cluster_runner.convert_clusters()
@@ -2274,6 +2848,33 @@ def main():
 	new_links = add_new_links(new_links, organization_links)
 
 	# ---- ISS	----
+	print("Converting investigations")
+	# Step 1 - 3, 8, 21
+	investigation_runner = Convert_Investigations()
+	investigation_topics, investigation_links, topic_key_val, link_key_val = investigation_runner.convert_investigations(iss_data, topic_key_val, link_key_val, cluster_topics, article_topics)
+	new_topics = add_new_topics(new_topics, investigation_topics)
+	new_links = add_new_links(new_links, investigation_links)
+
+	print("Converting Sponsoring Space Agencies")
+	# Step 4
+	ssa_runner = Convert_Sponsoring_Space_Agencies()
+	sponsoring_space_agency_topics, sponsoring_space_agency_links, topic_key_val, link_key_val = ssa_runner.convert_sponsoring_space_agencies(iss_data, topic_key_val, link_key_val, investigation_topics)
+	new_topics = add_new_topics(new_topics, sponsoring_space_agency_topics)
+	new_links = add_new_links(new_links, sponsoring_space_agency_links)
+
+	print("Converting Sponsoring Space Organizations")
+	# Step 5 - 7
+	sso_runner = Convert_Sponsoring_Space_Organizations()
+	sponsoring_space_organization_topics, sponsoring_space_organization_links, topic_key_val, link_key_val = sso_runner.convert_sponsoring_space_organizations(iss_data, topic_key_val, link_key_val, investigation_topics)
+	new_topics = add_new_topics(new_topics, sponsoring_space_organization_topics)
+	new_links = add_new_links(new_links, sponsoring_space_organization_links)
+
+	print("Converting principal investigators")
+	# Step 9 - 20
+	pi_runner = Convert_Principal_Investigators()
+	principal_investigator_topics, principal_investigator_links, topic_key_val, link_key_val = pi_runner.convert_principal_investigators(iss_data, topic_key_val, link_key_val, investigation_topics)
+	new_topics = add_new_topics(new_topics, principal_investigator_topics)
+	new_links = add_new_links(new_links, principal_investigator_links)
 
 	print("Outputting to files")
 	# Output topics to file
