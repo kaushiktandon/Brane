@@ -520,6 +520,7 @@ class Convert_Clusters():
 		properties['_key'] = 'T97'
 		properties['_type'] = 'cluster'
 		properties['title'] = 'University'
+		cluster_topics.append(self.create_topic(properties))
 
 		# Create Links
 		properties = dict()
@@ -1925,7 +1926,7 @@ class Convert_Events():
 class Convert_Organizations():
 	def __init__(self):
 		print("Protocol G")
-	def post_process_organizations(self, organization_topics):
+	def post_process_organizations(self, organization_topics, organization_links, link_key_val):
 		terms = dict()
 		terms['Univ'] = 'University'
 		terms['Amer'] = 'American'
@@ -2015,7 +2016,25 @@ class Convert_Organizations():
 					word = terms.get(word) or word
 				temp_topic_title = temp_topic_title + " " + word
 			topic['title'] = temp_topic_title.strip()
-		return organization_topics
+
+		for topic in organization_topics:
+			if 'University' in topic['title'] or 'College' in topic['title']:
+				# (1.1) Link to university
+				link_key = 'L' + str(link_key_val)
+				# Increment key value for next link
+				link_key_val = link_key_val + 1
+				# Output link to JSON format
+				link_json_struct = {}
+				link_json_struct['_key'] = link_key
+				link_json_struct['_type'] = 'hasInstance'
+				link_json_struct['name'] = ''
+				link_json_struct['definition'] = ''
+				link_json_struct['_from'] = 'T97' 
+				link_json_struct['_to'] = topic['_key']
+				# Store in list to output at end
+				organization_links.append(link_json_struct)
+
+		return organization_topics, organization_links, link_key_val
 
 	# Protocol G main function to run
 	def convert_organizations(self, data, topic_key_val, link_key_val, researcher_topics, publication_topics):
@@ -2194,7 +2213,7 @@ class Convert_Organizations():
 					if (duplicated_links_dict.get((researcher_key, topic_key)) == None):
 						organization_links.append(link_json_struct)
 						duplicated_links_dict[(researcher_key, topic_key)] = 1
-		organization_topics = self.post_process_organizations(organization_topics)
+		organization_topics, organization_links, link_key_val = self.post_process_organizations(organization_topics, organization_links, link_key_val)
 		return organization_topics, organization_links, topic_key_val, link_key_val
 
 class Convert_Investigations():
@@ -2319,6 +2338,40 @@ class Convert_Investigations():
 class Convert_Sponsoring_Space_Agencies():
 	def __init__(self):
 		print("ISS - Convert Sponsoring Space Agencies")
+	def post_process_space_agencies(self, sponsoring_space_agency_topics, sponsoring_space_agency_links, research_organization_topics, research_organization_links, topic_key_val, link_key_val):
+		# Post process based off research_organization_topics (Protocol G)
+		topics_to_delete = list()
+		links_to_delete = list()
+		new_links = list()
+		duplicated_links_dict = dict()
+		print("Post processing")
+		nasa_key = None
+		for topic in sponsoring_space_agency_topics:
+			if ("NASA" in topic['title']):
+				nasa_key = topic['_key']
+		for topic in research_organization_topics:
+			if ("Nasa" in topic['title']):
+				print(topic['title'] + " has key " + topic['_key'])
+				topics_to_delete.append(topic)
+				for link in research_organization_links:
+					if link['_to'] == topic['_key']:
+						links_to_delete.append(link)
+						if link['_type'] != 'hasInstance' and duplicated_links_dict.get((link['_from'], nasa_key)) == None:
+							link_key = 'L' + str(link_key_val)
+							# Increment key value for next link
+							link_key_val = link_key_val + 1
+
+							link_json_struct = {}
+							link_json_struct['_key'] = link_key
+							link_json_struct['_type'] = link['_type']
+							link_json_struct['name'] = ''
+							link_json_struct['_from'] = link['_from'] 
+							link_json_struct['_to'] = nasa_key
+							new_links.append(link_json_struct)
+							duplicated_links_dict[(link['_from'], nasa_key)] = 1
+
+		print("Done post processing")
+		return topics_to_delete, links_to_delete, new_links, topic_key_val, link_key_val
 	def convert_sponsoring_space_agencies(self, data, topic_key_val, link_key_val, investigation_topics):
 		sponsoring_space_agency_topics = list()
 		sponsoring_space_agency_links = list()
@@ -2826,6 +2879,20 @@ def add_new_links(old_links, new_links):
 		old_links.append(link)
 	return old_links
 
+def delete_topics(old_topics, topics_to_delete):
+	print("Have " + str(len(old_topics)) + " topics. Deleting " + str(len(topics_to_delete)) + " topics.")
+	for topic in topics_to_delete:
+		old_topics.remove(topic)
+	print("Have " + str(len(old_topics)) + " topics. ")
+	return old_topics
+
+def delete_links(old_links, links_to_delete):
+	print("Have " + str(len(old_links)) + " links. Deleting " + str(len(links_to_delete)) + " links.")
+	for link in links_to_delete:
+		old_links.remove(link)
+	print("Have " + str(len(old_links)) + " links. ")
+	return old_links
+
 # General helper function
 def parse_author(author):
 	# The form is LastName, FirstName or LastName, FirstName Middle
@@ -2921,8 +2988,13 @@ def main():
 	# Step 4
 	ssa_runner = Convert_Sponsoring_Space_Agencies()
 	sponsoring_space_agency_topics, sponsoring_space_agency_links, topic_key_val, link_key_val = ssa_runner.convert_sponsoring_space_agencies(iss_data, topic_key_val, link_key_val, investigation_topics)
+	deleted_topics, deleted_links, new_nasa_links, topic_key_val, link_key_val = ssa_runner.post_process_space_agencies(sponsoring_space_agency_topics, sponsoring_space_agency_links, organization_topics, organization_links, topic_key_val, link_key_val)
+	new_topics = delete_topics(new_topics, deleted_topics)
+	new_links = delete_links(new_links, deleted_links)
+
 	new_topics = add_new_topics(new_topics, sponsoring_space_agency_topics)
 	new_links = add_new_links(new_links, sponsoring_space_agency_links)
+	new_links = add_new_links(new_links, new_nasa_links)
 
 	print("Converting Sponsoring Space Organizations")
 	# Step 5 - 7

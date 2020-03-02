@@ -511,6 +511,7 @@ def convert_clusters():
 	properties['_key'] = 'T97'
 	properties['_type'] = 'cluster'
 	properties['title'] = 'University'
+	cluster_topics.append(create_topic(properties))
 
 	# Create Links
 	properties = dict()
