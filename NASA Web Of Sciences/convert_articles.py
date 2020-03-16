@@ -524,7 +524,6 @@ def main():
 		issue = temporary_journal_topic_struct['issue']
 		part = temporary_journal_topic_struct['part']
 		journal = temporary_publication_topic_struct['title']
-		print(journal)
 
 		topic_key = 'T' + str(topic_key_val)
 		# Increment key value for next topic

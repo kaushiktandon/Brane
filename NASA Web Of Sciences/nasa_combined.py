@@ -9,6 +9,15 @@ import csv
 import numpy as np
 import pandas as pd
 
+import requests
+import inflection as inf
+from collections import OrderedDict
+from nltk.corpus import wordnet as wn
+import nltk
+nltk.download('wordnet')
+import warnings
+warnings.filterwarnings('ignore')
+
 class Convert_Clusters():
 	def __init__(self):
 		print("Create clusters")
@@ -16,6 +25,9 @@ class Convert_Clusters():
 		cluster_topics = list()
 		cluster_links = list()
 		properties = dict()
+
+		final_topic = 0
+		final_link = 0
 
 		# Create generic properties
 		properties['_key'] = ''
@@ -36,7 +48,7 @@ class Convert_Clusters():
 		# T1
 		properties['_key'] = 'T1'
 		properties['_type'] = 'system'
-		properties['title'] = "ISS investigation"
+		properties['title'] = "ISS research ecosystem"
 		cluster_topics.append(self.create_topic(properties))
 		# T2
 		properties['_key'] = 'T2'
@@ -149,7 +161,7 @@ class Convert_Clusters():
 		# T22
 		properties['_key'] = 'T22'
 		properties['_type'] = 'cluster'
-		properties['title'] = "Research organization"
+		properties['title'] = "Other research organization"
 		cluster_topics.append(self.create_topic(properties))
 		# T23
 		properties['_key'] = 'T23'
@@ -159,8 +171,366 @@ class Convert_Clusters():
 		# T24
 		properties['_key'] = 'T24'
 		properties['_type'] = 'cluster'
-		properties['title'] = "Untagged keyword"
+		properties['title'] = "Web of Science Keyword"
 		cluster_topics.append(self.create_topic(properties))
+		# T25
+		properties['_key'] = 'T25'
+		properties['_type'] = 'cluster'
+		properties['title'] = 'Tagged Web of Science Keyword'
+		cluster_topics.append(self.create_topic(properties))
+		# T26
+		properties['_key'] = 'T26'
+		properties['_type'] = 'cluster'
+		properties['title'] = 'Untagged Web of Science Keyword'
+		cluster_topics.append(self.create_topic(properties))
+		# T27
+		properties['_key'] = 'T27'
+		properties['_type'] = 'cluster'
+		properties['title'] = 'ISS Investigation'
+		cluster_topics.append(self.create_topic(properties))
+		# T29
+		properties['_key'] = 'T29'
+		properties['_type'] = 'cluster'
+		properties['title'] = 'Space agency'
+		cluster_topics.append(self.create_topic(properties))
+		# T30
+		properties['_key'] = 'T30'
+		properties['_type'] = 'cluster'
+		properties['title'] = 'Sponsoring organization'
+		cluster_topics.append(self.create_topic(properties))
+		# T31
+		properties['_key'] = 'T31'
+		properties['_type'] = 'cluster'
+		properties['title'] = 'Principal investigator'
+		cluster_topics.append(self.create_topic(properties))
+		# T32
+		properties['_key'] = 'T32'
+		properties['_type'] = 'cluster'
+		properties['title'] = 'City'
+		cluster_topics.append(self.create_topic(properties))
+		# T33
+		properties['_key'] = 'T33'
+		properties['_type'] = 'cluster'
+		properties['title'] = 'State'
+		cluster_topics.append(self.create_topic(properties))
+		# T34
+		properties['_key'] = 'T34'
+		properties['_type'] = 'cluster'
+		properties['title'] = 'Country'
+		cluster_topics.append(self.create_topic(properties))
+		# T35
+		properties['_key'] = 'T35'
+		properties['_type'] = 'property'
+		properties['title'] = 'Operations location'
+		cluster_topics.append(self.create_topic(properties))
+		# T36
+		properties['_key'] = 'T36'
+		properties['_type'] = 'cluster'
+		properties['title'] = 'Academic activity'
+		cluster_topics.append(self.create_topic(properties))
+		# T37
+		properties['_key'] = 'T37'
+		properties['_type'] = 'cluster'
+		properties['title'] = 'Location'
+		cluster_topics.append(self.create_topic(properties))
+		# T39
+		properties['_key'] = 'T39'
+		properties['_type'] = 'cluster'
+		properties['title'] = 'Biology and Biotechnology investigation'
+		cluster_topics.append(self.create_topic(properties))
+		# T40
+		properties['_key'] = 'T40'
+		properties['_type'] = 'cluster'
+		properties['title'] = 'Animal Biology - Invertebrates investigation'
+		cluster_topics.append(self.create_topic(properties))
+		# T41
+		properties['_key'] = 'T41'
+		properties['_type'] = 'cluster'
+		properties['title'] = 'Animal Biology - Vertebrates investigation'
+		cluster_topics.append(self.create_topic(properties))
+		# T42
+		properties['_key'] = 'T42'
+		properties['_type'] = 'cluster'
+		properties['title'] = 'Cellular Biology investigation'
+		cluster_topics.append(self.create_topic(properties))
+		# T43
+		properties['_key'] = 'T43'
+		properties['_type'] = 'cluster'
+		properties['title'] = 'Macromolecular Crystal Growth investigation'
+		cluster_topics.append(self.create_topic(properties))
+		# T44
+		properties['_key'] = 'T44'
+		properties['_type'] = 'cluster'
+		properties['title'] = 'Microbiology investigation'
+		cluster_topics.append(self.create_topic(properties))
+		# T45
+		properties['_key'] = 'T45'
+		properties['_type'] = 'cluster'
+		properties['title'] = 'Microencapsulation investigation'
+		cluster_topics.append(self.create_topic(properties))
+		# T46
+		properties['_key'] = 'T46'
+		properties['_type'] = 'cluster'
+		properties['title'] = 'Plant Biology investigation'
+		cluster_topics.append(self.create_topic(properties))
+		# T47
+		properties['_key'] = 'T47'
+		properties['_type'] = 'cluster'
+		properties['title'] = 'Vaccine Development investigation'
+		cluster_topics.append(self.create_topic(properties))
+		# T48
+		properties['_key'] = 'T48'
+		properties['_type'] = 'cluster'
+		properties['title'] = 'Earth and Space Science investigation'
+		cluster_topics.append(self.create_topic(properties))
+		# T49
+		properties['_key'] = 'T49'
+		properties['_type'] = 'cluster'
+		properties['title'] = 'Astrobiology investigation'
+		cluster_topics.append(self.create_topic(properties))
+		# T50
+		properties['_key'] = 'T50'
+		properties['_type'] = 'cluster'
+		properties['title'] = 'Astrophysics investigation'
+		cluster_topics.append(self.create_topic(properties))
+		# T51
+		properties['_key'] = 'T51'
+		properties['_type'] = 'cluster'
+		properties['title'] = 'Earth Remote Sensing investigation'
+		cluster_topics.append(self.create_topic(properties))
+		# T52
+		properties['_key'] = 'T52'
+		properties['_type'] = 'cluster'
+		properties['title'] = 'Heliophysics investigation'
+		cluster_topics.append(self.create_topic(properties))
+		# T53
+		properties['_key'] = 'T53'
+		properties['_type'] = 'cluster'
+		properties['title'] = 'Educational and cultural activities investigation'
+		cluster_topics.append(self.create_topic(properties))
+		# T54
+		properties['_key'] = 'T54'
+		properties['_type'] = 'cluster'
+		properties['title'] = 'Classroom Versions of ISS Investigations investigation'
+		cluster_topics.append(self.create_topic(properties))
+		# T55
+		properties['_key'] = 'T55'
+		properties['_type'] = 'cluster'
+		properties['title'] = 'Educational Competitions investigation'
+		cluster_topics.append(self.create_topic(properties))
+		# T56
+		properties['_key'] = 'T56'
+		properties['_type'] = 'cluster'
+		properties['title'] = 'Educational Demonstrations investigation'
+		cluster_topics.append(self.create_topic(properties))
+		# T57
+		properties['_key'] = 'T57'
+		properties['_type'] = 'cluster'
+		properties['title'] = 'Student-Developed Investigations investigation'
+		cluster_topics.append(self.create_topic(properties))
+		# T58
+		properties['_key'] = 'T58'
+		properties['_type'] = 'cluster'
+		properties['title'] = 'Human Research investigation'
+		cluster_topics.append(self.create_topic(properties))
+		# T59
+		properties['_key'] = 'T59'
+		properties['_type'] = 'cluster'
+		properties['title'] = 'Bone and Muscle Physiology investigation'
+		cluster_topics.append(self.create_topic(properties))
+		# T60
+		properties['_key'] = 'T60'
+		properties['_type'] = 'cluster'
+		properties['title'] = 'Cardiovascular and Respiratory Systems investigation'
+		cluster_topics.append(self.create_topic(properties))
+		# T61
+		properties['_key'] = 'T61'
+		properties['_type'] = 'cluster'
+		properties['title'] = 'Crew Healthcare Systems investigation'
+		cluster_topics.append(self.create_topic(properties))
+		# T62
+		properties['_key'] = 'T62'
+		properties['_type'] = 'cluster'
+		properties['title'] = 'Habitability and Human Factors investigation'
+		cluster_topics.append(self.create_topic(properties))
+		# T63
+		properties['_key'] = 'T63'
+		properties['_type'] = 'cluster'
+		properties['title'] = 'Human Behavior and Performance investigation'
+		cluster_topics.append(self.create_topic(properties))
+		# T64
+		properties['_key'] = 'T64'
+		properties['_type'] = 'cluster'
+		properties['title'] = 'Human Microbiome investigation'
+		cluster_topics.append(self.create_topic(properties))
+		# T65
+		properties['_key'] = 'T65'
+		properties['_type'] = 'cluster'
+		properties['title'] = 'Immune System investigation'
+		cluster_topics.append(self.create_topic(properties))
+		# T66
+		properties['_key'] = 'T66'
+		properties['_type'] = 'cluster'
+		properties['title'] = 'Integrated Physiology and Nutrition investigation'
+		cluster_topics.append(self.create_topic(properties))
+		# T67
+		properties['_key'] = 'T67'
+		properties['_type'] = 'cluster'
+		properties['title'] = 'Nervous and Vestibular Systems investigation'
+		cluster_topics.append(self.create_topic(properties))
+		# T68
+		properties['_key'] = 'T68'
+		properties['_type'] = 'cluster'
+		properties['title'] = 'Radiation Impacts on Humans investigation'
+		cluster_topics.append(self.create_topic(properties))
+		# T69
+		properties['_key'] = 'T69'
+		properties['_type'] = 'cluster'
+		properties['title'] = 'Vision investigation'
+		cluster_topics.append(self.create_topic(properties))
+		# T70
+		properties['_key'] = 'T70'
+		properties['_type'] = 'cluster'
+		properties['title'] = 'Physical science investigation'
+		cluster_topics.append(self.create_topic(properties))
+		# T71
+		properties['_key'] = 'T71'
+		properties['_type'] = 'cluster'
+		properties['title'] = 'Combustion Science investigation'
+		cluster_topics.append(self.create_topic(properties))
+		# T72
+		properties['_key'] = 'T72'
+		properties['_type'] = 'cluster'
+		properties['title'] = 'Complex Fluids investigation'
+		cluster_topics.append(self.create_topic(properties))
+		# T73
+		properties['_key'] = 'T73'
+		properties['_type'] = 'cluster'
+		properties['title'] = 'Fluid Physics investigation'
+		cluster_topics.append(self.create_topic(properties))
+		# T74
+		properties['_key'] = 'T74'
+		properties['_type'] = 'cluster'
+		properties['title'] = 'Fundamental Physics investigation'
+		cluster_topics.append(self.create_topic(properties))
+		# T75
+		properties['_key'] = 'T75'
+		properties['_type'] = 'cluster'
+		properties['title'] = 'Materials Science investigation'
+		cluster_topics.append(self.create_topic(properties))
+		# T76
+		properties['_key'] = 'T76'
+		properties['_type'] = 'cluster'
+		properties['title'] = 'Technology Development and Demonstration investigation'
+		cluster_topics.append(self.create_topic(properties))
+		# T77
+		properties['_key'] = 'T77'
+		properties['_type'] = 'cluster'
+		properties['title'] = 'Air, Water and Surface Monitoring investigation'
+		cluster_topics.append(self.create_topic(properties))
+		# T78
+		properties['_key'] = 'T78'
+		properties['_type'] = 'cluster'
+		properties['title'] = 'Avionics and Software investigation'
+		cluster_topics.append(self.create_topic(properties))
+		# T79
+		properties['_key'] = 'T79'
+		properties['_type'] = 'cluster'
+		properties['title'] = 'Characterizing Experiment Hardware investigation'
+		cluster_topics.append(self.create_topic(properties))
+		# T80
+		properties['_key'] = 'T80'
+		properties['_type'] = 'cluster'
+		properties['title'] = 'Commercial Demonstrations investigation'
+		cluster_topics.append(self.create_topic(properties))
+		# T81
+		properties['_key'] = 'T81'
+		properties['_type'] = 'cluster'
+		properties['title'] = 'Communication and Navigation investigation'
+		cluster_topics.append(self.create_topic(properties))
+		# T82
+		properties['_key'] = 'T82'
+		properties['_type'] = 'cluster'
+		properties['title'] = 'Fire Suppression and Detection investigation'
+		cluster_topics.append(self.create_topic(properties))
+		# T83
+		properties['_key'] = 'T83'
+		properties['_type'] = 'cluster'
+		properties['title'] = 'Food and Clothing Systems investigation'
+		cluster_topics.append(self.create_topic(properties))
+		# T84
+		properties['_key'] = 'T84'
+		properties['_type'] = 'cluster'
+		properties['title'] = 'Imaging Technology investigation'
+		cluster_topics.append(self.create_topic(properties))
+		# T85
+		properties['_key'] = 'T85'
+		properties['_type'] = 'cluster'
+		properties['title'] = 'Life Support Systems and Habitation investigation'
+		cluster_topics.append(self.create_topic(properties))
+		# T86
+		properties['_key'] = 'T86'
+		properties['_type'] = 'cluster'
+		properties['title'] = 'Microbial Populations in Spacecraft investigation'
+		cluster_topics.append(self.create_topic(properties))
+		# T87
+		properties['_key'] = 'T87'
+		properties['_type'] = 'cluster'
+		properties['title'] = 'Microgravity Environment Measurement investigation'
+		cluster_topics.append(self.create_topic(properties))
+		# T88
+		properties['_key'] = 'T88'
+		properties['_type'] = 'cluster'
+		properties['title'] = 'Radiation Measurements and Shielding investigation'
+		cluster_topics.append(self.create_topic(properties))
+		# T89
+		properties['_key'] = 'T89'
+		properties['_type'] = 'cluster'
+		properties['title'] = 'Repair and Fabrication Technologies investigation'
+		cluster_topics.append(self.create_topic(properties))
+		# T90
+		properties['_key'] = 'T90'
+		properties['_type'] = 'cluster'
+		properties['title'] = 'Robotics investigation'
+		cluster_topics.append(self.create_topic(properties))
+		# T91
+		properties['_key'] = 'T91'
+		properties['_type'] = 'cluster'
+		properties['title'] = 'Small Satellites and Control Technologies investigation'
+		cluster_topics.append(self.create_topic(properties))
+		# T92
+		properties['_key'] = 'T92'
+		properties['_type'] = 'cluster'
+		properties['title'] = 'Space Structures investigation'
+		cluster_topics.append(self.create_topic(properties))
+		# T93
+		properties['_key'] = 'T93'
+		properties['_type'] = 'cluster'
+		properties['title'] = 'Spacecraft and Orbital Environments investigation'
+		cluster_topics.append(self.create_topic(properties))
+		# T94
+		properties['_key'] = 'T94'
+		properties['_type'] = 'cluster'
+		properties['title'] = 'Spacecraft Materials investigation'
+		cluster_topics.append(self.create_topic(properties))
+		# T95
+		properties['_key'] = 'T95'
+		properties['_type'] = 'cluster'
+		properties['title'] = 'Thermal Management Systems investigation'
+		cluster_topics.append(self.create_topic(properties))
+		# T96
+		properties['_key'] = 'T96'
+		properties['_type'] = 'cluster'
+		properties['title'] = 'Wordnet ontology'
+		cluster_topics.append(self.create_topic(properties))
+		# T97
+		properties['_key'] = 'T97'
+		properties['_type'] = 'cluster'
+		properties['title'] = 'University'
+		cluster_topics.append(self.create_topic(properties))
+
+		# Change this if more topics added!
+		final_topic = 97
 
 		# Create Links
 		properties = dict()
@@ -180,13 +550,13 @@ class Convert_Clusters():
 		properties['_key'] = 'L2'
 		properties['_type'] = 'encompasses'
 		properties['_from'] = 'T1'
-		properties['_to'] = 'T4'
+		properties['_to'] = 'T27'
 		cluster_links.append(self.create_link(properties))
 		# L3
 		properties['_key'] = 'L3'
 		properties['_type'] = 'encompasses'
 		properties['_from'] = 'T1'
-		properties['_to'] = 'T10'
+		properties['_to'] = 'T36'
 		cluster_links.append(self.create_link(properties))
 		# L4
 		properties['_key'] = 'L4'
@@ -224,25 +594,25 @@ class Convert_Clusters():
 		properties['_from'] = 'T4'
 		properties['_to'] = 'T8'
 		cluster_links.append(self.create_link(properties))
-		# L10
+		# L10	
 		properties['_key'] = 'L10'
 		properties['_type'] = 'hasSubclass'
 		properties['_from'] = 'T4'
 		properties['_to'] = 'T9'
 		cluster_links.append(self.create_link(properties))
-		# L11
+		# L11	
 		properties['_key'] = 'L11'
 		properties['_type'] = 'hasSubclass'
 		properties['_from'] = 'T10'
 		properties['_to'] = 'T11'
 		cluster_links.append(self.create_link(properties))
-		# L12
+		# L12	
 		properties['_key'] = 'L12'
 		properties['_type'] = 'hasSubclass'
 		properties['_from'] = 'T10'
 		properties['_to'] = 'T12'
 		cluster_links.append(self.create_link(properties))
-		# L13
+		# L13	
 		properties['_key'] = 'L13'
 		properties['_type'] = 'hasSubclass'
 		properties['_from'] = 'T10'
@@ -260,8 +630,432 @@ class Convert_Clusters():
 		properties['_from'] = 'T21'
 		properties['_to'] = 'T23'
 		cluster_links.append(self.create_link(properties))
+		# L16
+		properties['_key'] = 'L16'
+		properties['_type'] = 'encompasses'
+		properties['_from'] = 'T1'
+		properties['_to'] = 'T24'
+		cluster_links.append(self.create_link(properties))
+		# L17
+		properties['_key'] = 'L17'
+		properties['_type'] = 'hasSubclass'
+		properties['_from'] = 'T24'
+		properties['_to'] = 'T25'
+		cluster_links.append(self.create_link(properties))
+		# L18
+		properties['_key'] = 'L18'
+		properties['_type'] = 'hasSubclass'
+		properties['_from'] = 'T24'
+		properties['_to'] = 'T26'
+		cluster_links.append(self.create_link(properties))
+		# L19
+		properties['_key'] = 'L19'
+		properties['_type'] = 'hasSubclass'
+		properties['_from'] = 'T21'
+		properties['_to'] = 'T29'
+		cluster_links.append(self.create_link(properties))
+		# L20
+		properties['_key'] = 'L20'
+		properties['_type'] = 'hasSubclass'
+		properties['_from'] = 'T21'
+		properties['_to'] = 'T30'
+		cluster_links.append(self.create_link(properties))
+		# L21
+		properties['_key'] = 'L21'
+		properties['_type'] = 'hasSubclass'
+		properties['_from'] = 'T2'
+		properties['_to'] = 'T31'
+		cluster_links.append(self.create_link(properties))
+		# L22
+		properties['_key'] = 'L22'
+		properties['_type'] = 'hasSubclass'
+		properties['_from'] = 'T37'
+		properties['_to'] = 'T32'
+		cluster_links.append(self.create_link(properties))
+		# L23
+		properties['_key'] = 'L23'
+		properties['_type'] = 'hasSubclass'
+		properties['_from'] = 'T37'
+		properties['_to'] = 'T33'
+		cluster_links.append(self.create_link(properties))
+		# L24
+		properties['_key'] = 'L24'
+		properties['_type'] = 'hasSubclass'
+		properties['_from'] = 'T37'
+		properties['_to'] = 'T34'
+		cluster_links.append(self.create_link(properties))
+		# L25
+		properties['_key'] = 'L25'
+		properties['_type'] = 'hasSubclass'
+		properties['_from'] = 'T27'
+		properties['_to'] = 'T39'
+		cluster_links.append(self.create_link(properties))
+		# L26
+		properties['_key'] = 'L26'
+		properties['_type'] = 'hasSubclass'
+		properties['_from'] = 'T27'
+		properties['_to'] = 'T48'
+		cluster_links.append(self.create_link(properties))
+		# L27
+		properties['_key'] = 'L27'
+		properties['_type'] = 'hasSubclass'
+		properties['_from'] = 'T27'
+		properties['_to'] = 'T53'
+		cluster_links.append(self.create_link(properties))
+		# L28
+		properties['_key'] = 'L28'
+		properties['_type'] = 'hasSubclass'
+		properties['_from'] = 'T27'
+		properties['_to'] = 'T58'
+		cluster_links.append(self.create_link(properties))
+		# L29
+		properties['_key'] = 'L29'
+		properties['_type'] = 'hasSubclass'
+		properties['_from'] = 'T27'
+		properties['_to'] = 'T70'
+		cluster_links.append(self.create_link(properties))
+		# L30
+		properties['_key'] = 'L30'
+		properties['_type'] = 'hasSubclass'
+		properties['_from'] = 'T27'
+		properties['_to'] = 'T76'
+		cluster_links.append(self.create_link(properties))
+		# L31
+		properties['_key'] = 'L31'
+		properties['_type'] = 'hasSubclass'
+		properties['_from'] = 'T39'
+		properties['_to'] = 'T40'
+		cluster_links.append(self.create_link(properties))
+		# L32
+		properties['_key'] = 'L32'
+		properties['_type'] = 'hasSubclass'
+		properties['_from'] = 'T39'
+		properties['_to'] = 'T41'
+		cluster_links.append(self.create_link(properties))
+		# L33
+		properties['_key'] = 'L33'
+		properties['_type'] = 'hasSubclass'
+		properties['_from'] = 'T39'
+		properties['_to'] = 'T42'
+		cluster_links.append(self.create_link(properties))
+		# L34
+		properties['_key'] = 'L34'
+		properties['_type'] = 'hasSubclass'
+		properties['_from'] = 'T39'
+		properties['_to'] = 'T43'
+		cluster_links.append(self.create_link(properties))
+		# L35
+		properties['_key'] = 'L35'
+		properties['_type'] = 'hasSubclass'
+		properties['_from'] = 'T39'
+		properties['_to'] = 'T44'
+		cluster_links.append(self.create_link(properties))
+		# L36
+		properties['_key'] = 'L36'
+		properties['_type'] = 'hasSubclass'
+		properties['_from'] = 'T39'
+		properties['_to'] = 'T45'
+		cluster_links.append(self.create_link(properties))
+		# L37
+		properties['_key'] = 'L37'
+		properties['_type'] = 'hasSubclass'
+		properties['_from'] = 'T39'
+		properties['_to'] = 'T46'
+		cluster_links.append(self.create_link(properties))
+		# L38
+		properties['_key'] = 'L38'
+		properties['_type'] = 'hasSubclass'
+		properties['_from'] = 'T39'
+		properties['_to'] = 'T47'
+		cluster_links.append(self.create_link(properties))
+		# L39
+		properties['_key'] = 'L39'
+		properties['_type'] = 'hasSubclass'
+		properties['_from'] = 'T48'
+		properties['_to'] = 'T49'
+		cluster_links.append(self.create_link(properties))
+		# L40
+		properties['_key'] = 'L40'
+		properties['_type'] = 'hasSubclass'
+		properties['_from'] = 'T48'
+		properties['_to'] = 'T50'
+		cluster_links.append(self.create_link(properties))
+		# L41
+		properties['_key'] = 'L41'
+		properties['_type'] = 'hasSubclass'
+		properties['_from'] = 'T48'
+		properties['_to'] = 'T51'
+		cluster_links.append(self.create_link(properties))
+		# L42
+		properties['_key'] = 'L42'
+		properties['_type'] = 'hasSubclass'
+		properties['_from'] = 'T48'
+		properties['_to'] = 'T52'
+		cluster_links.append(self.create_link(properties))
+		# L43
+		properties['_key'] = 'L43'
+		properties['_type'] = 'hasSubclass'
+		properties['_from'] = 'T53'
+		properties['_to'] = 'T54'
+		cluster_links.append(self.create_link(properties))
+		# L44
+		properties['_key'] = 'L44'
+		properties['_type'] = 'hasSubclass'
+		properties['_from'] = 'T53'
+		properties['_to'] = 'T55'
+		cluster_links.append(self.create_link(properties))
+		# L45
+		properties['_key'] = 'L45'
+		properties['_type'] = 'hasSubclass'
+		properties['_from'] = 'T53'
+		properties['_to'] = 'T56'
+		cluster_links.append(self.create_link(properties))
+		# L46
+		properties['_key'] = 'L46'
+		properties['_type'] = 'hasSubclass'
+		properties['_from'] = 'T53'
+		properties['_to'] = 'T57'
+		cluster_links.append(self.create_link(properties))
+		# L47
+		properties['_key'] = 'L47'
+		properties['_type'] = 'hasSubclass'
+		properties['_from'] = 'T58'
+		properties['_to'] = 'T59'
+		cluster_links.append(self.create_link(properties))
+		# L48
+		properties['_key'] = 'L48'
+		properties['_type'] = 'hasSubclass'
+		properties['_from'] = 'T58'
+		properties['_to'] = 'T60'
+		cluster_links.append(self.create_link(properties))
+		# L49
+		properties['_key'] = 'L49'
+		properties['_type'] = 'hasSubclass'
+		properties['_from'] = 'T58'
+		properties['_to'] = 'T61'
+		cluster_links.append(self.create_link(properties))
+		# L50
+		properties['_key'] = 'L50'
+		properties['_type'] = 'hasSubclass'
+		properties['_from'] = 'T58'
+		properties['_to'] = 'T62'
+		cluster_links.append(self.create_link(properties))
+		# L51
+		properties['_key'] = 'L51'
+		properties['_type'] = 'hasSubclass'
+		properties['_from'] = 'T58'
+		properties['_to'] = 'T63'
+		cluster_links.append(self.create_link(properties))
+		# L52
+		properties['_key'] = 'L52'
+		properties['_type'] = 'hasSubclass'
+		properties['_from'] = 'T58'
+		properties['_to'] = 'T64'
+		cluster_links.append(self.create_link(properties))
+		# L53
+		properties['_key'] = 'L53'
+		properties['_type'] = 'hasSubclass'
+		properties['_from'] = 'T58'
+		properties['_to'] = 'T65'
+		cluster_links.append(self.create_link(properties))
+		# L54
+		properties['_key'] = 'L54'
+		properties['_type'] = 'hasSubclass'
+		properties['_from'] = 'T58'
+		properties['_to'] = 'T66'
+		cluster_links.append(self.create_link(properties))
+		# L55
+		properties['_key'] = 'L55'
+		properties['_type'] = 'hasSubclass'
+		properties['_from'] = 'T58'
+		properties['_to'] = 'T67'
+		cluster_links.append(self.create_link(properties))
+		# L56
+		properties['_key'] = 'L56'
+		properties['_type'] = 'hasSubclass'
+		properties['_from'] = 'T58'
+		properties['_to'] = 'T68'
+		cluster_links.append(self.create_link(properties))
+		# L57
+		properties['_key'] = 'L57'
+		properties['_type'] = 'hasSubclass'
+		properties['_from'] = 'T58'
+		properties['_to'] = 'T69'
+		cluster_links.append(self.create_link(properties))
+		# L58
+		properties['_key'] = 'L58'
+		properties['_type'] = 'hasSubclass'
+		properties['_from'] = 'T70'
+		properties['_to'] = 'T71'
+		cluster_links.append(self.create_link(properties))
+		# L59
+		properties['_key'] = 'L59'
+		properties['_type'] = 'hasSubclass'
+		properties['_from'] = 'T70'
+		properties['_to'] = 'T72'
+		cluster_links.append(self.create_link(properties))
+		# L60
+		properties['_key'] = 'L60'
+		properties['_type'] = 'hasSubclass'
+		properties['_from'] = 'T70'
+		properties['_to'] = 'T73'
+		cluster_links.append(self.create_link(properties))
+		# L61
+		properties['_key'] = 'L61'
+		properties['_type'] = 'hasSubclass'
+		properties['_from'] = 'T70'
+		properties['_to'] = 'T74'
+		cluster_links.append(self.create_link(properties))
+		# L62
+		properties['_key'] = 'L62'
+		properties['_type'] = 'hasSubclass'
+		properties['_from'] = 'T70'
+		properties['_to'] = 'T75'
+		cluster_links.append(self.create_link(properties))
+		# L63
+		properties['_key'] = 'L63'
+		properties['_type'] = 'hasSubclass'
+		properties['_from'] = 'T76'
+		properties['_to'] = 'T77'
+		cluster_links.append(self.create_link(properties))
+		# L64
+		properties['_key'] = 'L64'
+		properties['_type'] = 'hasSubclass'
+		properties['_from'] = 'T76'
+		properties['_to'] = 'T78'
+		cluster_links.append(self.create_link(properties))
+		# L65
+		properties['_key'] = 'L65'
+		properties['_type'] = 'hasSubclass'
+		properties['_from'] = 'T76'
+		properties['_to'] = 'T79'
+		cluster_links.append(self.create_link(properties))
+		# L66
+		properties['_key'] = 'L66'
+		properties['_type'] = 'hasSubclass'
+		properties['_from'] = 'T76'
+		properties['_to'] = 'T80'
+		cluster_links.append(self.create_link(properties))
+		# L67
+		properties['_key'] = 'L67'
+		properties['_type'] = 'hasSubclass'
+		properties['_from'] = 'T76'
+		properties['_to'] = 'T81'
+		cluster_links.append(self.create_link(properties))
+		# L68
+		properties['_key'] = 'L68'
+		properties['_type'] = 'hasSubclass'
+		properties['_from'] = 'T76'
+		properties['_to'] = 'T82'
+		cluster_links.append(self.create_link(properties))
+		# L69
+		properties['_key'] = 'L69'
+		properties['_type'] = 'hasSubclass'
+		properties['_from'] = 'T76'
+		properties['_to'] = 'T83'
+		cluster_links.append(self.create_link(properties))
+		# L70
+		properties['_key'] = 'L70'
+		properties['_type'] = 'hasSubclass'
+		properties['_from'] = 'T76'
+		properties['_to'] = 'T84'
+		cluster_links.append(self.create_link(properties))
+		# L71
+		properties['_key'] = 'L71'
+		properties['_type'] = 'hasSubclass'
+		properties['_from'] = 'T76'
+		properties['_to'] = 'T85'
+		cluster_links.append(self.create_link(properties))
+		# L72
+		properties['_key'] = 'L72'
+		properties['_type'] = 'hasSubclass'
+		properties['_from'] = 'T76'
+		properties['_to'] = 'T86'
+		cluster_links.append(self.create_link(properties))
+		# L73
+		properties['_key'] = 'L73'
+		properties['_type'] = 'hasSubclass'
+		properties['_from'] = 'T76'
+		properties['_to'] = 'T87'
+		cluster_links.append(self.create_link(properties))
+		# L74
+		properties['_key'] = 'L74'
+		properties['_type'] = 'hasSubclass'
+		properties['_from'] = 'T76'
+		properties['_to'] = 'T88'
+		cluster_links.append(self.create_link(properties))
+		# L75
+		properties['_key'] = 'L75'
+		properties['_type'] = 'hasSubclass'
+		properties['_from'] = 'T76'
+		properties['_to'] = 'T89'
+		cluster_links.append(self.create_link(properties))
+		# L76
+		properties['_key'] = 'L76'
+		properties['_type'] = 'hasSubclass'
+		properties['_from'] = 'T76'
+		properties['_to'] = 'T90'
+		cluster_links.append(self.create_link(properties))
+		# L77
+		properties['_key'] = 'L77'
+		properties['_type'] = 'hasSubclass'
+		properties['_from'] = 'T76'
+		properties['_to'] = 'T91'
+		cluster_links.append(self.create_link(properties))
+		# L78
+		properties['_key'] = 'L78'
+		properties['_type'] = 'hasSubclass'
+		properties['_from'] = 'T76'
+		properties['_to'] = 'T92'
+		cluster_links.append(self.create_link(properties))
+		# L79
+		properties['_key'] = 'L79'
+		properties['_type'] = 'hasSubclass'
+		properties['_from'] = 'T76'
+		properties['_to'] = 'T93'
+		cluster_links.append(self.create_link(properties))
+		# L80
+		properties['_key'] = 'L80'
+		properties['_type'] = 'hasSubclass'
+		properties['_from'] = 'T76'
+		properties['_to'] = 'T94'
+		cluster_links.append(self.create_link(properties))
+		# L81
+		properties['_key'] = 'L81'
+		properties['_type'] = 'hasSubclass'
+		properties['_from'] = 'T76'
+		properties['_to'] = 'T95'
+		cluster_links.append(self.create_link(properties))
+		# L82
+		properties['_key'] = 'L82'
+		properties['_type'] = 'hasSubclass'
+		properties['_from'] = 'T36'
+		properties['_to'] = 'T4'
+		cluster_links.append(self.create_link(properties))
+		# L83
+		properties['_key'] = 'L83'
+		properties['_type'] = 'hasSubclass'
+		properties['_from'] = 'T36'
+		properties['_to'] = 'T10'
+		cluster_links.append(self.create_link(properties))
+		# L84
+		properties['_key'] = 'L84'
+		properties['_type'] = 'encompasses'
+		properties['_from'] = 'T1'
+		properties['_to'] = 'T96'
+		cluster_links.append(self.create_link(properties))
+		# L85
+		properties['_key'] = 'L85'
+		properties['_type'] = 'hasSubclass'
+		properties['_from'] = 'T21'
+		properties['_to'] = 'T97'
+		cluster_links.append(self.create_link(properties))
 
-		return cluster_topics, cluster_links, len(cluster_topics) + 1, len(cluster_links) + 1
+		# Change this if more links added!
+		final_link = 85
+
+		# T28, T38 missing
+		return cluster_topics, cluster_links, final_topic + 1, final_link + 1
 	def create_topic(self, properties):
 		topic_json_struct = {}
 		for prop, value in properties.items():
@@ -1146,7 +1940,7 @@ class Convert_Events():
 class Convert_Organizations():
 	def __init__(self):
 		print("Protocol G")
-	def post_process_organizations(self, organization_topics):
+	def post_process_organizations(self, organization_topics, organization_links, link_key_val):
 		terms = dict()
 		terms['Univ'] = 'University'
 		terms['Amer'] = 'American'
@@ -1236,7 +2030,25 @@ class Convert_Organizations():
 					word = terms.get(word) or word
 				temp_topic_title = temp_topic_title + " " + word
 			topic['title'] = temp_topic_title.strip()
-		return organization_topics
+
+		for topic in organization_topics:
+			if 'University' in topic['title'] or 'College' in topic['title']:
+				# (1.1) Link to university
+				link_key = 'L' + str(link_key_val)
+				# Increment key value for next link
+				link_key_val = link_key_val + 1
+				# Output link to JSON format
+				link_json_struct = {}
+				link_json_struct['_key'] = link_key
+				link_json_struct['_type'] = 'hasInstance'
+				link_json_struct['name'] = ''
+				link_json_struct['definition'] = ''
+				link_json_struct['_from'] = 'T97' 
+				link_json_struct['_to'] = topic['_key']
+				# Store in list to output at end
+				organization_links.append(link_json_struct)
+
+		return organization_topics, organization_links, link_key_val
 
 	# Protocol G main function to run
 	def convert_organizations(self, data, topic_key_val, link_key_val, researcher_topics, publication_topics):
@@ -1415,7 +2227,7 @@ class Convert_Organizations():
 					if (duplicated_links_dict.get((researcher_key, topic_key)) == None):
 						organization_links.append(link_json_struct)
 						duplicated_links_dict[(researcher_key, topic_key)] = 1
-		organization_topics = self.post_process_organizations(organization_topics)
+		organization_topics, organization_links, link_key_val = self.post_process_organizations(organization_topics, organization_links, link_key_val)
 		return organization_topics, organization_links, topic_key_val, link_key_val
 
 # General helper function
@@ -1458,18 +2270,232 @@ def output_to_file(info, file):
 			i = i + 1
 		f.write(']')
 
+
+
+""" 
+		Protocol A 
+		Tashlin Reddy
+		March 2020 
+
+"""
+
+
+#define helper functions
+def acquire_definition(keyword):
+    keyword = keyword.replace(' ', '_')
+    define = wn.synsets(keyword)[0].definition()
+    return define
+
+def acquire_hypernym(keyword):
+    keyword = keyword.replace(' ', '_')
+    hypernym = wn.synsets(keyword)[0].hypernyms()[0].name().split(".")[0]
+    return hypernym
+
+def acquire_wordnet_id(keyword):
+    keyword = keyword.replace(' ', '_')
+    synset = wn.synsets(keyword)[0].name()
+    ss = wn.synset(synset)
+    offset = str(ss.offset()).zfill(8) + '-' + ss.pos()
+    return offset
+                                  
+def get_link_key(df, link_key_val):
+    key_link = list(range(link_key_val+1, link_key_val+df.shape[0]+1))
+    results = list(map(str, key_link))
+    results = ['L'+ s for s in results]
+    return results
+
+def get_topic_key(df, topic_key_val):
+    key_topic = list(range(topic_key_val+1, topic_key_val+df.shape[0]+1))
+    topic_key_val_new = topic_key_val+df.shape[0]+1
+    results = list(map(str, key_topic))
+    results = ['T'+ s for s in results]
+    return results, topic_key_val_new
+
+def capitalize_first_letter(some_string):
+    try:
+        new_string = some_string[0].upper() + some_string[1:].lower()
+        return new_string
+    except:
+        return some_string
+
+# read and clean function
+def read_clean(web_of_science_path):
+    df = pd.read_csv(web_of_science_path)
+    
+    df_filter = df[['TI','DE','ID' , 'DI']]
+    df_filter['DE'] = df_filter['DE'].str.replace('; ', ', ')
+    df_filter['ID'] = df_filter['ID'].str.replace('; ', ', ')
+    df_filter['DE'] = df_filter['DE'].str.replace('-', ' ')
+    df_filter['ID'] = df_filter['ID'].str.replace('-', ' ')
+    df_filter['DE'] = df_filter['DE'].fillna(' ')
+    df_filter['ID'] = df_filter['ID'].fillna(' ')
+
+    # 2. Combine keyword columns
+    df_filter['keywords'] = df_filter['DE'] + ', ' + df_filter['ID']
+
+    # 3. lowercase keyword case
+    df_filter['keywords'] = df_filter['keywords'].str.lower()
+    df_filter = df_filter[['TI','keywords' , 'DI']]
+
+    # 5. Remove duplicates
+    # https://stackoverflow.com/questions/47316783/python-dataframe-remove-duplicate-words-in-the-same-cell-within-a-column-in-pyt
+    df_filter['keywords'] = (df_filter['keywords'].str.split(', ')
+                                  .apply(lambda x: OrderedDict.fromkeys(x).keys())
+                                  .str.join(', '))
+    # 6. Split strings
+    df_filter['keywords'] = df_filter['keywords'].str.split(', ', expand=False)
+
+    # 7. pandas explode - Transform each element of a list-like to a row, replicating the index values.
+    df_explode = df_filter.explode('keywords')
+    df_explode = df_explode[df_explode['keywords'] != ' ']
+    df_explode.reset_index(inplace=True, drop=True)
+
+    df_explode_unique = df_explode.drop_duplicates(['keywords'])
+    df_explode_unique.reset_index(drop=True, inplace=True)
+    df_clean = df_explode_unique.copy()
+
+    df_clean.rename(columns={'TI': 'topic_title', 'keywords': 'definition', 
+                           'DI': 'reference' }, inplace=True)
+    df_clean['definition'] = df_clean['definition'].str.replace('^mar$', 'mars', regex=True)
+    
+    return df_clean
+
+
+def connect_nodes(df_clean, dict_json, topic_key_val):
+    df_json = pd.DataFrame(dict_json) #dict_json
+    definition_lst = []
+    wordnet_ID_lst = []
+    keyword_lst = []
+    type_lst = []
+    type_2_lst = []
+    name_lst = []
+    T_key_lst = []
+    from_lst = []
+    to_lst = []
+    untagged_lst = []
+    count = topic_key_val
+    for index, row in df_clean.iterrows():
+        #Links
+    #     print('index: ', index, 'keywords: ', row['definition'])
+        keyword_lst.append(row['topic_title'])
+        definition_lst.append(row['definition'])
+        wordnet_ID_lst.append('')
+        type_lst.append('Topic')
+        type_2_lst.append('link')
+        name_lst.append('mentions')
+        T_key_lst.append('T'+str(count))
+        from_lst.append(list(df_json[df_json['title']==row['topic_title']]['_key'])[0])
+
+        count += 1
+        try:
+            #hasInstance
+            definition = acquire_definition(row['definition'])
+            wordnet_ID = acquire_wordnet_id(row['definition'])
+
+            keyword_lst.append(row['definition'])
+            definition_lst.append(definition)
+            wordnet_ID_lst.append('') #wordnet_ID
+            type_lst.append('Topic')
+            type_2_lst.append('hasInstance')
+            name_lst.append('')
+            T_key_lst.append('T'+str(count))
+
+            to_lst.append('T'+str(count))
+            to_lst.append('T'+str(count))
+            count += 1
+        except:
+            #untagged 
+            #untagged_lst.append(row['definition'])
+            keyword_lst.append(row['definition'])
+            type_lst.append('Topic')
+            type_2_lst.append('hasInstance')
+            name_lst.append('')
+            T_key_lst.append('T'+str(count))
+            from_lst.append('T26')
+            to_lst.append('T'+str(count))
+            to_lst.append('T'+str(count))
+
+            definition_lst.append('')
+            wordnet_ID_lst.append('')
+            count += 1
+        else:
+            try:
+                #cluster
+                hyper = acquire_hypernym(row['definition'])
+                keyword_lst.append(hyper)
+
+                definition = acquire_definition(hyper)
+                definition_lst.append(definition)
+
+                wordnet_ID = acquire_wordnet_id(hyper)
+                wordnet_ID_lst.append(wordnet_ID)
+
+                type_lst.append('Cluster')
+                type_2_lst.append('hasSubclass')
+                name_lst.append('')
+                T_key_lst.append('T'+str(count))
+                from_lst.append('T'+str(count))
+                from_lst.append('T96')
+
+                to_lst.append('T'+str(count))
+                count += 1
+            except:
+                from_lst.append('T25')
+
+    df = pd.DataFrame(
+        {'key':T_key_lst,
+         'type': type_lst,
+         'keyword': keyword_lst,
+         'definition': definition_lst,
+         'wordnet_ID': wordnet_ID_lst,
+         '_type': type_2_lst,
+         '_from': from_lst,
+         '_to': to_lst,
+         'name': name_lst,
+        })
+    return df
+
+def split_topic_link(df, link_key_val):
+    df['reference'] = ''
+    df_pre_topic = df[['key',
+                     'type',
+                     'keyword',
+                     'definition',
+                     'reference',
+                     'wordnet_ID',
+                     '_type']]
+
+    df_pre_topic = df_pre_topic[df_pre_topic['_type'] != 'link']
+    df_topic = df_pre_topic.iloc[:,:6]
+    df_topic.rename(columns={"key": "_key", "type":"_type", "keyword": "title"}, inplace=True)
+    df_topic['title'] = df_topic['title'].apply(capitalize_first_letter)
+    df_topic['definition'] = df_topic['definition'].apply(capitalize_first_letter)
+    
+    df_link = df[['_type','name','_from', '_to']]
+    df_link['definition'] = ''
+    df_link['_key'] = get_link_key(df_link, link_key_val)
+    df_link = df_link[['_key','_type','name','definition','_from','_to']]
+    
+    return df_topic, df_link
+
+def protocol_a_combine(df_topic, df_link, new_topics, new_links):
+    topic_dict = df_topic.to_dict(orient='records')
+    link_dict = df_link.to_dict(orient='records')
+    topic_key_val = int(df_topic['_key'].iloc[-1][1:])+1
+    link_key_val = int(df_link['_key'].iloc[-1][1:])+1
+    new_topics = new_topics + topic_dict
+    new_links = new_links + link_dict
+    return new_topics, new_links, topic_key_val, link_key_val
+
+
 def main():
 	# Create list of topics
 	new_topics = list()
 	new_links = list()
 
 	# Load and clean the data
-	data = pd.read_csv("data.csv")
-	data = data.fillna('')
-	# Starting at key value T24 for topics
-	# topic_key_val = 24
-	# Starting at key value L23 for links
-	# link_key_val = 23
+	wos_data = pd.read_csv("wos_data.csv")
+	wos_data = wos_data.fillna('')
 
 	print("Creating clusters")
 	cluster_runner = Convert_Clusters()
@@ -1479,40 +2505,51 @@ def main():
 
 	print("Converting researchers")
 	researcher_runner = Convert_Researchers()
-	researcher_topics, researcher_links, topic_key_val, link_key_val = 	researcher_runner.convert_researchers(data, topic_key_val, link_key_val)
+	researcher_topics, researcher_links, topic_key_val, link_key_val = 	researcher_runner.convert_researchers(wos_data, topic_key_val, link_key_val)
 	new_topics = add_new_topics(new_topics, researcher_topics)
 	new_links = add_new_links(new_links, researcher_links)
 
 	print("Converting publications")
 	publication_runner = Convert_Publications()
-	publication_topics, publication_links, topic_key_val, link_key_val = publication_runner.convert_publications(data, topic_key_val, link_key_val)
+	publication_topics, publication_links, topic_key_val, link_key_val = publication_runner.convert_publications(wos_data, topic_key_val, link_key_val)
 	new_topics = add_new_topics(new_topics, publication_topics)
 	new_links = add_new_links(new_links, publication_links)
 
 	print("Converting journals")
 	journal_runner = Convert_Journals()
-	journal_topics, journal_links, topic_key_val, link_key_val = journal_runner.convert_journals(data, topic_key_val, link_key_val, publication_topics)
+	journal_topics, journal_links, topic_key_val, link_key_val = journal_runner.convert_journals(wos_data, topic_key_val, link_key_val, publication_topics)
 	new_topics = add_new_topics(new_topics, journal_topics)
 	new_links = add_new_links(new_links, journal_links)
 
 	print("Converting articles")
 	article_runner = Convert_Articles()
-	article_topics, article_links, topic_key_val, link_key_val = article_runner.convert_articles(data, topic_key_val, link_key_val, researcher_topics, publication_topics, journal_topics, journal_links)
+	article_topics, article_links, topic_key_val, link_key_val = article_runner.convert_articles(wos_data, topic_key_val, link_key_val, researcher_topics, publication_topics, journal_topics, journal_links)
 	new_topics = add_new_topics(new_topics, article_topics)
 	new_links = add_new_links(new_links, article_links)
 
 	print("Converting events")
 	event_runner = Convert_Events()
-	event_topics, event_links, topic_key_val, link_key_val = event_runner.convert_events(data, topic_key_val, link_key_val, article_topics)
+	event_topics, event_links, topic_key_val, link_key_val = event_runner.convert_events(wos_data, topic_key_val, link_key_val, article_topics)
 	new_topics = add_new_topics(new_topics, event_topics)
 	new_links = add_new_links(new_links, event_links)
 
 	print("Converting organizations")
 	organization_runner = Convert_Organizations()
-	organization_topics, organization_links, topic_key_val, link_key_val = organization_runner.convert_organizations(data, topic_key_val, link_key_val, researcher_topics, publication_topics)
+	organization_topics, organization_links, topic_key_val, link_key_val = organization_runner.convert_organizations(wos_data, topic_key_val, link_key_val, researcher_topics, publication_topics)
 	new_topics = add_new_topics(new_topics, organization_topics)
 	new_links = add_new_links(new_links, organization_links)
 
+	# Protocol A
+	print("Classifying ISS Keywords")
+	print("Protocol A")
+	df_clean = read_clean('wos_data.csv')
+	print("WordNet Extraction and Connecting Nodes")
+	df = connect_nodes(df_clean, new_topics, topic_key_val)
+	print("Splitting topic and links")
+	df_topic, df_link = split_topic_link(df, link_key_val)
+	print("Combining jsons")
+	new_topics, new_links, topic_key_val,link_key_val = protocol_a_combine(df_topic, df_link, new_topics, new_links)
+	
 	print("Outputting to files")
 	# Output topics to file
 	output_to_file(new_topics, 'output/combined_topics.json')
