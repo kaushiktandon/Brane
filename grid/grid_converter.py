@@ -21,6 +21,7 @@ class Convert_Clusters():
 		properties['title'] = ''
 		properties['reference'] = ''
 		properties['definition'] = ''
+		properties['valueType'] = ''
 
 		# T1
 		properties['_key'] = 'T1'
@@ -28,6 +29,7 @@ class Convert_Clusters():
 		properties['title'] = 'Global Research Information Database Ecosystem'
 		properties['reference'] = 'https://grid.ac/'
 		properties['definition'] = ''
+		properties['valueType'] = ''
 		cluster_topics.append(create_topic(properties))
 		# T2
 		properties['_key'] = 'T2'
@@ -35,6 +37,7 @@ class Convert_Clusters():
 		properties['title'] = 'Institution'
 		properties['reference'] = ''
 		properties['definition'] = 'Institutes associated with academic research'
+		properties['valueType'] = ''
 		cluster_topics.append(create_topic(properties))
 		# T3
 		properties['_key'] = 'T3'
@@ -42,6 +45,7 @@ class Convert_Clusters():
 		properties['title'] = 'Education institution'
 		properties['reference'] = ''
 		properties['definition'] = 'An educational institution where research takes place. Can grant degrees and includes faculties, departments and schools.'
+		properties['valueType'] = ''
 		cluster_topics.append(create_topic(properties))
 		# T4
 		properties['_key'] = 'T4'
@@ -49,6 +53,7 @@ class Convert_Clusters():
 		properties['title'] = 'Healthcare institution'
 		properties['reference'] = ''
 		properties['definition'] = 'A health related facility where patients are treated. Includes hospitals, medical centres, health centres, treatment center. Includes trusts and healthcare systems.'
+		properties['valueType'] = ''
 		cluster_topics.append(create_topic(properties))
 		# T5
 		properties['_key'] = 'T5'
@@ -56,6 +61,7 @@ class Convert_Clusters():
 		properties['title'] = 'Company'
 		properties['reference'] = ''
 		properties['definition'] = 'Business entity with the aim of gaining profit.'
+		properties['valueType'] = ''
 		cluster_topics.append(create_topic(properties))
 		# T6
 		properties['_key'] = 'T6'
@@ -63,6 +69,7 @@ class Convert_Clusters():
 		properties['title'] = 'Archive institution'
 		properties['reference'] = ''
 		properties['definition'] = 'Repository of documents, artifacts, or specimens. Includes libraries and museums that are not part of a university.'
+		properties['valueType'] = ''
 		cluster_topics.append(create_topic(properties))
 		# T7
 		properties['_key'] = 'T7'
@@ -70,6 +77,7 @@ class Convert_Clusters():
 		properties['title'] = 'Nonprofit institution'
 		properties['reference'] = ''
 		properties['definition'] = 'Organisation that uses its surplus revenue to achieve its goals. Includes charities and other non-government research funding bodies.'
+		properties['valueType'] = ''
 		cluster_topics.append(create_topic(properties))
 		# T8
 		properties['_key'] = 'T8'
@@ -77,6 +85,7 @@ class Convert_Clusters():
 		properties['title'] = 'Government institution'
 		properties['reference'] = ''
 		properties['definition'] = 'An organisation operated mainly by the government of one or multiple countries/territories.'
+		properties['valueType'] = ''
 		cluster_topics.append(create_topic(properties))
 		# T9
 		properties['_key'] = 'T9'
@@ -84,6 +93,7 @@ class Convert_Clusters():
 		properties['title'] = 'Facility'
 		properties['reference'] = ''
 		properties['definition'] = 'A building or facility dedicated to research of a specific area, usually contains specialised equipment. Includes telescopes, observatories and particle accelerators.'
+		properties['valueType'] = ''
 		cluster_topics.append(create_topic(properties))
 		# T10
 		properties['_key'] = 'T10'
@@ -91,6 +101,7 @@ class Convert_Clusters():
 		properties['title'] = 'Other institution'
 		properties['reference'] = ''
 		properties['definition'] = 'Used in cases where none of the previously mentioned types are suitable.'
+		properties['valueType'] = ''
 		cluster_topics.append(create_topic(properties))
 		# T11
 		properties['_key'] = 'T11'
@@ -98,6 +109,7 @@ class Convert_Clusters():
 		properties['title'] = 'Founding date'
 		properties['reference'] = ''
 		properties['definition'] = 'The founding date of an institution'
+		properties['valueType'] = 'integer'
 		cluster_topics.append(create_topic(properties))
 		# T12
 		properties['_key'] = 'T12'
@@ -105,6 +117,7 @@ class Convert_Clusters():
 		properties['title'] = 'Geographic location'
 		properties['reference'] = ''
 		properties['definition'] = ''
+		properties['valueType'] = ''
 		cluster_topics.append(create_topic(properties))
 		# T13
 		properties['_key'] = 'T13'
@@ -112,6 +125,7 @@ class Convert_Clusters():
 		properties['title'] = 'Country'
 		properties['reference'] = ''
 		properties['definition'] = ''
+		properties['valueType'] = ''
 		cluster_topics.append(create_topic(properties))
 		# T14
 		properties['_key'] = 'T14'
@@ -119,6 +133,7 @@ class Convert_Clusters():
 		properties['title'] = 'Region'
 		properties['reference'] = ''
 		properties['definition'] = ''
+		properties['valueType'] = ''
 		cluster_topics.append(create_topic(properties))
 		# T15
 		properties['_key'] = 'T15'
@@ -126,6 +141,7 @@ class Convert_Clusters():
 		properties['title'] = 'City'
 		properties['reference'] = ''
 		properties['definition'] = ''
+		properties['valueType'] = ''
 		cluster_topics.append(create_topic(properties))
 
 		final_topic = 15
@@ -145,14 +161,6 @@ class Convert_Clusters():
 		properties['name'] = ''
 		properties['_from'] = 'T1'
 		properties['_to'] = 'T2'
-		properties['value'] = ''
-		cluster_links.append(create_link(properties))
-		# L2
-		properties['_key'] = 'L2'
-		properties['_type'] = 'encompasses'
-		properties['name'] = ''
-		properties['_from'] = 'T1'
-		properties['_to'] = 'T11'
 		properties['value'] = ''
 		cluster_links.append(create_link(properties))
 		# L3
@@ -255,13 +263,11 @@ def create_topic(properties):
 	return topic_json_struct
 def create_link(properties):
 	return create_topic(properties)
-
 # General helper function
 def add_new_topics(old_topics, new_topics):
 	for topic in new_topics:
 		old_topics.append(topic)
 	return old_topics
-
 # General helper function
 def add_new_links(old_links, new_links):
 	for link in new_links:

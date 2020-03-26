@@ -14,6 +14,7 @@ def main():
 	links = links.fillna('')
 
 	last_key = 0
+	error = False
 	with open(output_topics_for_code_file, 'w+') as f:
 		f.write("# Create generic properties\nproperties = dict()\n")
 		for key in topics.keys():
@@ -28,9 +29,12 @@ def main():
 			last_key += 1
 			if (last_key != int(topic_row['_key'][1:])):
 				print("POTENTIAL ERROR: " + str(topic_row['_key']))
+				error = True
 		f.write("\nfinal_topic = " + str(last_key) + "\n")
-
+		if (error):
+			print("FINAL_TOPIC MAY BE WRONG")
 	last_key = 0
+	error = False
 	with open(output_links_for_code_file, 'w+') as f:
 		f.write("# Create links\nproperties = dict()\n")
 		for key in links.keys():
@@ -45,8 +49,10 @@ def main():
 			last_key += 1
 			if (last_key != int(link_row['_key'][1:])):
 				print("POTENTIAL ERROR: " + str(link_row['_key']))
+				error = True
 		f.write("\nfinal_link = " + str(last_key) + "\n")
-
+		if (error):
+			print("FINAL_LINK MAY BE WRONG")
 
 if __name__ == '__main__':
 	main()
