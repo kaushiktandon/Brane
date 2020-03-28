@@ -1,15 +1,21 @@
 import json
 import pandas as pd
+import sys
+import numpy as np
 
 def main():
 	main_graph_topics_file = 'data/covid_topics.json'
 	main_graph_links_file = 'data/covid_links.json'
 
+	print("Enter number of json files when running")
+	num_files = int(sys.argv[1])
+	print(str(num_files * 2) + " total (topic + link) will be outputted")
+
 	subgraphs = []
 	subgraphs.append(['data/grid_topics.json', 'data/grid_links.json'])
 
-	output_topics_file = 'full_graph_topics.json'
-	output_links_file = 'full_graph_links.json'
+	output_topics_file = 'full_graph_output/full_graph_topics'
+	output_links_file = 'full_graph_output/full_graph_links'
 
 	main_graph_topics = pd.read_json(main_graph_topics_file)
 	main_graph_topics = main_graph_topics.fillna('')
@@ -68,7 +74,7 @@ def main():
 
 		# Append subgraph topics to main graph
 		main_graph_topics = main_graph_topics.append(subgraph_topics, sort=False)
-		main_graph_topics.reset_index(inplace=True)
+		main_graph_topics.reset_index(inplace=True, drop=True)
 		# Append subgraph links to main graph
 		main_graph_links = main_graph_links.append(subgraph_links, sort=False)
 	
@@ -87,7 +93,7 @@ def main():
 		main_graph_links = main_graph_links.append(new_link, ignore_index=True)
 
 		print(main_graph_links.tail())
-		main_graph_links.reset_index(inplace=True)
+		main_graph_links.reset_index(inplace=True, drop=True)
 		# Update link_key_difference and topic_key_difference
 		next_topic_key_str = main_graph_topics['_key'].iloc[-1]
 		topic_key_difference = int(next_topic_key_str[1:])
@@ -95,10 +101,20 @@ def main():
 		next_link_key_str = main_graph_links['_key'].iloc[-1]
 		link_key_difference = int(next_link_key_str[1:])
 
-	# Output topics
-	main_graph_topics.to_json(output_topics_file)
-	# Output links
-	main_graph_links.to_json(output_links_file)
+	if (num_files == 1):
+		# Output topics
+		main_graph_topics.to_json(output_topics_file + '.json', orient='records')
+		# Output links
+		main_graph_links.to_json(output_links_file + '.json', orient='records')
+	else:
+		main_graph_topics = np.array_split(main_graph_topics, num_files)
+		main_graph_links = np.array_split(main_graph_links, num_files)
+		for i in range (num_files):
+			topics_file = output_topics_file + str(i+1) + '.json'
+			links_file = output_links_file + str(i+1) + '.json'
+			main_graph_topics[i].to_json(topics_file, orient='records')
+			main_graph_links[i].to_json(links_file, orient='records')
+
 
 if __name__ == '__main__':
 	main()
