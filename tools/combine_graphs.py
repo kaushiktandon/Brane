@@ -3,6 +3,20 @@ import pandas as pd
 import sys
 import numpy as np
 
+def output_to_file(info, file):
+	with open(file, 'w', encoding='utf-8') as f:
+		f.write('[')
+		i = 0
+		for idx, topic in info.iterrows():
+			f.write(json.dumps(topic.to_dict(), ensure_ascii=False))
+			if i != len(info) - 1:
+				f.write(",\n")
+			else:
+				f.write('\n')
+			i = i + 1
+		f.write(']')
+
+
 def main():
 	main_graph_topics_file = 'data/covid_topics.json'
 	main_graph_links_file = 'data/covid_links.json'
@@ -101,19 +115,26 @@ def main():
 		next_link_key_str = main_graph_links['_key'].iloc[-1]
 		link_key_difference = int(next_link_key_str[1:])
 
+	main_graph_topics = main_graph_topics.fillna('')
+	main_graph_links = main_graph_links.fillna('')
 	if (num_files == 1):
 		# Output topics
-		main_graph_topics.to_json(output_topics_file + '.json', orient='records')
+		main_graph_topics.apply(lambda x: [x.dropna()], axis=1).to_json(output_topics_file + '.json', orient='records')
 		# Output links
-		main_graph_links.to_json(output_links_file + '.json', orient='records')
+		main_graph_links.apply(lambda x: [x.dropna()], axis=1).to_json(output_links_file + '.json', orient='records')
 	else:
 		main_graph_topics = np.array_split(main_graph_topics, num_files)
 		main_graph_links = np.array_split(main_graph_links, num_files)
+
 		for i in range (num_files):
 			topics_file = output_topics_file + str(i+1) + '.json'
 			links_file = output_links_file + str(i+1) + '.json'
-			main_graph_topics[i].to_json(topics_file, orient='records')
-			main_graph_links[i].to_json(links_file, orient='records')
+			output_to_file(main_graph_topics[i], topics_file)
+			print(topics_file + " done")
+			output_to_file(main_graph_links[i], links_file)
+			print(links_file + " done")
+			# main_graph_topics[i].apply(lambda x: [x.dropna()], axis=1).to_json(topics_file, orient='records', lines=True)
+			# main_graph_links[i].apply(lambda x: [x.dropna()], axis=1).to_json(links_file, orient='records', lines=True)
 
 
 if __name__ == '__main__':
