@@ -54,6 +54,8 @@ def extract_entry(entry):
 
 def extract_graph_data(str):
 	# Name - definition - reference. Assuming no - in name
+	if str.find('-') == -1:
+		return str, "", ""
 	graph_name = str[0 : str.find(' - ')].strip()
 	str = str[str.find(graph_name + ' - ') + len(graph_name) + 3 : ]
 
@@ -76,22 +78,22 @@ def extract_clusters(str, type1, type2, type3, type4, type5):
 	# Regex gets a list of the titles
 
 	# Assume Title - <definition>
-	p = re.compile(r'[A-Za-z 0-9]+ - <')
+	p = re.compile(r"['A-Za-zÀ-úû 0-9]+ - <")
 	c_titles_temp = extract_titles((p.findall(str)))
 	# Try Title- <definition>
-	p = re.compile(r'[A-Za-z 0-9]+- <')
+	p = re.compile(r"['A-Za-zÀ-úû 0-9]+ - <")
 	c_titles_temp2 = extract_titles(p.findall(str))
 	for t in c_titles_temp2:
 		if t not in c_titles_temp:
 			c_titles_temp.append(t)
 	# Try Title -<definition>
-	p = re.compile(r'[A-Za-z 0-9]+ -<')
+	p = re.compile(r"['A-Za-zÀ-úû 0-9]+ - <")
 	c_titles_temp3 = extract_titles(p.findall(str))
 	for t in c_titles_temp3:
 		if t not in c_titles_temp:
 			c_titles_temp.append(t)
 	# Try Title-<definition>
-	p = re.compile(r'[A-Za-z 0-9]+-<')
+	p = re.compile(r"['A-Za-zÀ-úû 0-9]+ - <")
 	c_titles_temp4 = extract_titles(p.findall(str))
 	for t in c_titles_temp4:
 		if t not in c_titles_temp:
@@ -100,6 +102,7 @@ def extract_clusters(str, type1, type2, type3, type4, type5):
 	# Order of list matters, so can't use a set
 
 	clusters = dict()
+	str = str.replace('\n\t', '')
 	for idx, val in enumerate(c_titles_temp):
 		props = dict()
 		c_title = val.strip()
@@ -109,8 +112,12 @@ def extract_clusters(str, type1, type2, type3, type4, type5):
 				print("Potential error parsing " + c_title)
 			start_index = str.find('<', (title_index) + len(val))
 			end_index = str.find(c_titles_temp[idx + 1])
-			end_index = str.rfind('>', start_index, end_index) + 1
-			definition = str[start_index : end_index]
+			end_index2 = str.rfind('>', start_index, end_index) + 1
+			# Keep working outwards. If the next title is in the definition of the current word, this should fix it
+			while end_index2 < start_index:
+				end_index = str.find(c_titles_temp[idx + 1], end_index + 1)
+				end_index2 = str.rfind('>', start_index, end_index) + 1
+			definition = str[start_index : end_index2]
 			str = str.replace(definition + ',', '')
 			str = str.replace(definition + ' ,', '')
 			str = str.replace(val + "-", '').strip()
@@ -299,14 +306,13 @@ def main():
 	form_api_url = 'https://v2-api.sheety.co/d065448ba1539c7a59b5a8aa995d4ee2/braneSheetConversion/formResponses1'
 	data = requests.get(form_api_url).json()
 
-	topic_key_val = 1
-	link_key_val = 1
-	new_topics = list()
-	new_links = list()
-
-	data_entries = list()
 	graph_num = 0
 	for entry in data['formResponses1']:
+		topic_key_val = 1
+		link_key_val = 1
+		new_topics = list()
+		new_links = list()
+
 		graph_num += 1
 		cluster_title_to_key = dict()
 		cluster_num_to_key = dict()
@@ -419,7 +425,7 @@ def main():
 
 			# Link topic to cluster
 			cluster_key = cluster_num_to_key.get(4)
-			if cluster_key != None:
+			if cluster_key == None:
 				print("error getting cluster number 4 key")
 			else:
 				link_key, link_key_val = new_link_key(link_key_val)
@@ -436,7 +442,7 @@ def main():
 
 			# Link topic to cluster
 			cluster_key = cluster_num_to_key.get(5)
-			if cluster_key != None:
+			if cluster_key == None:
 				print("error getting cluster number 5 key")
 			else:
 				link_key, link_key_val = new_link_key(link_key_val)
